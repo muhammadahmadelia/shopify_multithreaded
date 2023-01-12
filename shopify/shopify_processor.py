@@ -44,8 +44,7 @@ class Shopify_Processor:
         try:
             endpoint = ''
             endpoint = f'products.json?limit=250&vendor={quote(vendor_name)}'
-            URL = 'https://f56bc5df98bc1aedaf19e6070137d5e6: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@lookeronlinetest1.myshopify.com/admin/api/2021-01/'
-            url =  URL + endpoint
+            url =  self.URL + endpoint
             while True:
                 response = ''
                 while True:
@@ -65,7 +64,7 @@ class Shopify_Processor:
                             page_info = str(link).split(';')[-2]
                             page_info = page_info.split(',')[-1].strip()[1:-1]
                         url = page_info.split('page_info=')[-1]
-                        url = URL + f'products.json?limit=250&page_info=' + page_info
+                        url = self.URL + f'products.json?limit=250&page_info=' + page_info
                     else: break
                 except: break
 
