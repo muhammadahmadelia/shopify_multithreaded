@@ -1,0 +1,13 @@
+build/
+dist/
+files/
+templates/
+__pycache__/
+Scrapers_Controller.spec
+Shopify_Updater.spec
+image_1.ico
+convert.bat
+convert2.bat
+*.json
+*.txt
+*.exe
