@@ -101,22 +101,22 @@ class Controller:
 
                         print('\n')
 
-                        # if self.store.id == 1: Digitalhub_Scraper(self.DEBUG, self.result_filename, self.logs_filename).controller(self.store, selected_brands_and_types)
-                        # elif self.store.id == 2: Safilo_Scraper(self.DEBUG, self.result_filename, self.logs_filename).controller(self.store, selected_brands_and_types)
-                        # elif self.store.id == 3: Keringeyewear_Scraper(self.DEBUG, self.result_filename, self.logs_filename).controller(self.store, selected_brands_and_types)
-                        # elif self.store.id == 4: Rudyproject_Scraper(self.DEBUG, self.result_filename, self.logs_filename).controller(self.store, selected_brands_and_types)
-                        # elif self.store.id == 5: Luxottica_Scraper(self.DEBUG, self.result_filename, self.logs_filename).controller(self.store, selected_brands_and_types)
+                        if self.store.id == 1: Digitalhub_Scraper(self.DEBUG, self.result_filename, self.logs_filename).controller(self.store, selected_brands_and_types)
+                        elif self.store.id == 2: Safilo_Scraper(self.DEBUG, self.result_filename, self.logs_filename).controller(self.store, selected_brands_and_types)
+                        elif self.store.id == 3: Keringeyewear_Scraper(self.DEBUG, self.result_filename, self.logs_filename).controller(self.store, selected_brands_and_types)
+                        elif self.store.id == 4: Rudyproject_Scraper(self.DEBUG, self.result_filename, self.logs_filename).controller(self.store, selected_brands_and_types)
+                        elif self.store.id == 5: Luxottica_Scraper(self.DEBUG, self.result_filename, self.logs_filename).controller(self.store, selected_brands_and_types)
 
-                        # self.read_data_from_json_file(self.store.brands)
+                        self.read_data_from_json_file(self.store.brands)
 
-                        # if self.store.id == 1: Digitalhub_Database(self.DEBUG, self.logs_filename).controller(self.store, query_processor)
-                        # if self.store.id == 2: Safilo_Database(self.DEBUG, self.logs_filename).controller(self.store, query_processor)
-                        # if self.store.id == 3: Keringeyewear_Database(self.DEBUG, self.logs_filename).controller(self.store, query_processor)
-                        # if self.store.id == 4: Rudyproject_Database(self.DEBUG, self.logs_filename).controller(self.store, query_processor)
-                        # if self.store.id == 5: Luxottica_Database(self.DEBUG, self.logs_filename).controller(self.store, query_processor)
+                        if self.store.id == 1: Digitalhub_Database(self.DEBUG, self.logs_filename).controller(self.store, query_processor)
+                        if self.store.id == 2: Safilo_Database(self.DEBUG, self.logs_filename).controller(self.store, query_processor)
+                        if self.store.id == 3: Keringeyewear_Database(self.DEBUG, self.logs_filename).controller(self.store, query_processor)
+                        if self.store.id == 4: Rudyproject_Database(self.DEBUG, self.logs_filename).controller(self.store, query_processor)
+                        if self.store.id == 5: Luxottica_Database(self.DEBUG, self.logs_filename).controller(self.store, query_processor)
 
-                        # self.empty_brand_products(self.store)
-                        # self.update_brand_inventory(self.store, query_processor)
+                        self.empty_brand_products(self.store)
+                        self.update_brand_inventory(self.store, query_processor)
 
                         self.get_all_products_for_brands(self.store, selected_brands_and_types, query_processor)
                         

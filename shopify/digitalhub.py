@@ -50,7 +50,7 @@ class Digitalhub_Shopify:
                         shopify_product = self.get_matched_product(product.shopify_id, shopify_products)
                         
                         if shopify_product and 'Outlet' not in shopify_product['tags']: 
-                            if self.DEBUG: print(new_product_title)
+                            # if self.DEBUG: print(new_product_title)
                             
 
                             self.check_product_title(new_product_title, product, shopify_product, shopify_processor)
@@ -81,7 +81,12 @@ class Digitalhub_Shopify:
                                 self.check_product_metafields(new_product_title, brand, product, shopify_metafields, shopify_processor)
                             else:
                                 self.add_product_metafeilds(product, shopify_processor)
-                            
+
+                            shopify_italian_metafields = shopify_processor.get_product_italian_metafields_from_shopify(product.shopify_id)
+                            if shopify_italian_metafields:
+                                self.check_product_italian_metafields(new_product_title, product, shopify_metafields, shopify_processor)
+                            else:
+                                self.add_product_italian_metafeilds(product, shopify_processor)
                                 
                             for variant in product.variants:
                                 if variant.shopify_id: self.check_product_variant(new_product_title, variant, product, shopify_product, shopify_processor)
@@ -489,187 +494,6 @@ class Digitalhub_Shopify:
             self.print_logs(f'Exception in check_product_options: {e}')
             if self.DEBUG: print(f'Excepption in check_product_options: {e}')
             else: pass
-
-    # # get product title tag
-    # def get_title_tag(self, brand: Brand, product: Product) -> str:
-    #     title_tag = ''
-    #     try:
-    #         template_path = f'{self.template_file_path}{brand.name}/{product.type}/meta_title.txt'
-    #         template = self.get_template(template_path)
-    #         # print(template)
-    #         if template:
-    #             title_tag = template
-    #             if '{Brand.Name}' in title_tag: title_tag = str(title_tag).replace('{Brand.Name}', str(brand.name).strip().title()).strip()
-    #             elif '{BRAND.NAME}' in title_tag: title_tag = str(title_tag).replace('{BRAND.NAME}', str(brand.name).strip().upper()).strip()
-    #             elif '{brand.name}' in title_tag: title_tag = str(title_tag).replace('{brand.name}', str(brand.name).strip().lower()).strip()
-    #             title_tag = str(title_tag).replace('  ', ' ').strip()
-    #             # print(title_tag)
-
-    #             if '{Product.Number}' in title_tag: title_tag = str(title_tag).replace('{Product.Number}', str(product.number).strip().title()).strip()
-    #             elif '{PRODUCT.NUMBER}' in title_tag: title_tag = str(title_tag).replace('{PRODUCT.NUMBER}', str(product.number).strip().upper()).strip()
-    #             elif '{product.number}' in title_tag: title_tag = str(title_tag).replace('{product.number}', str(product.number).strip().lower()).strip()
-    #             title_tag = str(title_tag).replace('  ', ' ').strip()
-                
-    #             if str(product.name).strip(): 
-    #                 if '{Product.Name}' in title_tag: title_tag = str(title_tag).replace('{Product.Name}', str(product.name).strip().title())
-    #                 elif '{PRODUCT.NAME}' in title_tag: title_tag = str(title_tag).replace('{PRODUCT.NAME}', str(product.name).strip().upper())
-    #                 elif '{product.name}' in title_tag: title_tag = str(title_tag).replace('{product.name}', str(product.name).strip().lower())
-    #             else: 
-    #                 if '{Product.Name}' in title_tag: title_tag = str(title_tag).replace('{Product.Name}', '')
-    #                 elif '{PRODUCT.NAME}' in title_tag: title_tag = str(title_tag).replace('{PRODUCT.NAME}', '')
-    #                 elif '{product.name}' in title_tag: title_tag = str(title_tag).replace('{product.name}', '')
-    #             title_tag = str(title_tag).replace('  ', ' ').strip()
-                
-    #             if '{Product.Frame_Code}' in title_tag: title_tag = str(title_tag).replace('{Product.Frame_Code}', str(product.frame_code).strip().upper()).strip()
-    #             elif '{PRODUCT.FRAME_CODE}' in title_tag: title_tag = str(title_tag).replace('{PRODUCT.FRAME_CODE}', str(product.frame_code).strip().upper()).strip()
-    #             elif '{product.frame_code}' in title_tag: title_tag = str(title_tag).replace('{product.frame_code}', str(product.frame_code).strip().lower()).strip()
-    #             title_tag = str(title_tag).replace('  ', ' ').strip()
-
-    #             if '{Product.Frame_Color}' in title_tag: title_tag = str(title_tag).replace('{Product.Frame_Color}', str(product.frame_color).strip().title()).strip()
-    #             elif '{PRODUCT.FRAME_COLOR}' in title_tag: title_tag = str(title_tag).replace('{PRODUCT.FRAME_COLOR}', str(product.frame_color).strip().upper()).strip()
-    #             elif '{product.frame_color}' in title_tag: title_tag = str(title_tag).replace('{product.frame_color}', str(product.frame_color).strip().lower()).strip()
-    #             title_tag = str(title_tag).replace('  ', ' ').strip()
-
-    #             if '{Product.Lens_Code}' in title_tag: title_tag = str(title_tag).replace('{Product.Lens_Code}', str(product.lens_code).strip().title()).strip()
-    #             elif '{PRODUCT.LENS_CODE}' in title_tag: title_tag = str(title_tag).replace('{PRODUCT.LENS_CODE}', str(product.lens_code).strip().upper()).strip()
-    #             elif '{product.lens_code}' in title_tag: title_tag = str(title_tag).replace('{product.lens_code}', str(product.lens_code).strip().lower()).strip()
-    #             title_tag = str(title_tag).replace('  ', ' ').strip()
-
-    #             if '{Product.Lens_Color}' in title_tag: title_tag = str(title_tag).replace('{Product.Lens_Color}', str(product.lens_color).strip().title()).strip()
-    #             elif '{PRODUCT.LENS_COLOR}' in title_tag: title_tag = str(title_tag).replace('{PRODUCT.LENS_COLOR}', str(product.lens_color).strip().upper()).strip()
-    #             elif '{product.lens_color}' in title_tag: title_tag = str(title_tag).replace('{product.lens_color}', str(product.lens_color).strip().lower()).strip()
-    #             title_tag = str(title_tag).replace('  ', ' ').strip()
-
-    #             if '{Product.Type}' in title_tag: title_tag = str(title_tag).replace('{Product.Type}', str(product.type).strip().title()).strip()
-    #             elif '{PRODUCT.TYPE}' in title_tag: title_tag = str(title_tag).replace('{PRODUCT.TYPE}', str(product.type).strip().upper()).strip()
-    #             elif '{product.type}' in title_tag: title_tag = str(title_tag).replace('{product.type}', str(product.type).strip().lower()).strip()
-    #             title_tag = str(title_tag).replace('  ', ' ').strip()
-
-    #             # Metafields
-    #             if '{Product.Metafields.For_Who}' in title_tag: title_tag = str(title_tag).replace('{Product.Metafields.For_Who}', str(product.metafields.for_who).strip().title()).strip()
-    #             elif '{PRODUCT.METAFIELDS.FOR_WHO}' in title_tag: title_tag = str(title_tag).replace('{PRODUCT.METAFIELDS.FOR_WHO}', str(product.metafields.for_who).strip().upper()).strip()
-    #             elif '{product.metafields.for_who}' in title_tag: title_tag = str(title_tag).replace('{product.metafields.for_who}', str(product.metafields.for_who).strip().lower()).strip()
-    #             title_tag = str(title_tag).replace('  ', ' ').strip()
-
-    #             if '{Product.Metafields.Lens_Material}' in title_tag: title_tag = str(title_tag).replace('{Product.Metafields.Lens_Material}', str(product.metafields.lens_material).strip().title()).strip()
-    #             elif '{PRODUCT.METAFIELDS.LENS_MATERIAL}' in title_tag: title_tag = str(title_tag).replace('{PRODUCT.METAFIELDS.LENS_MATERIAL}', str(product.metafields.lens_material).strip().upper()).strip()
-    #             elif '{product.metafields.lens_material}' in title_tag: title_tag = str(title_tag).replace('{product.metafields.lens_material}', str(product.metafields.lens_material).strip().lower()).strip()
-    #             title_tag = str(title_tag).replace('  ', ' ').strip()
-
-    #             if '{Product.Metafields.Lens_Technology}' in title_tag: title_tag = str(title_tag).replace('{Product.Metafields.Lens_Technology}', str(product.metafields.lens_technology).strip().title()).strip()
-    #             elif '{PRODUCT.METAFIELDS.LENS_TECHNOLOGY}' in title_tag: title_tag = str(title_tag).replace('{PRODUCT.METAFIELDS.LENS_TECHNOLOGY}', str(product.metafields.lens_technology).strip().upper()).strip()
-    #             elif '{product.metafields.lens_technology}' in title_tag: title_tag = str(title_tag).replace('{product.metafields.lens_technology}', str(product.metafields.lens_technology).strip().lower()).strip()
-    #             title_tag = str(title_tag).replace('  ', ' ').strip()
-
-    #             if '{Product.Metafields.Frame_Material}' in title_tag: title_tag = str(title_tag).replace('{Product.Metafields.Frame_Material}', str(product.metafields.frame_material).strip().title()).strip()
-    #             elif '{PRODUCT.METAFIELDS.FRAME_MATERIAL}' in title_tag: title_tag = str(title_tag).replace('{PRODUCT.METAFIELDS.FRAME_MATERIAL}', str(product.metafields.frame_material).strip().upper()).strip()
-    #             elif '{product.metafields.frame_material}' in title_tag: title_tag = str(title_tag).replace('{product.metafields.frame_material}', str(product.metafields.frame_material).strip().lower()).strip()
-    #             title_tag = str(title_tag).replace('  ', ' ').strip()
-                
-    #             if '{Product.Metafields.Frame_Shape}' in title_tag: title_tag = str(title_tag).replace('{Product.Metafields.Frame_Shape}', str(product.metafields.frame_shape).strip().title()).strip()
-    #             elif '{PRODUCT.METAFIELDS.FRAME_SHAPE}' in title_tag: title_tag = str(title_tag).replace('{PRODUCT.METAFIELDS.FRAME_SHAPE}', str(product.metafields.frame_shape).strip().upper()).strip()
-    #             elif '{product.metafields.frame_shape}' in title_tag: title_tag = str(title_tag).replace('{product.metafields.frame_shape}', str(product.metafields.frame_shape).strip().lower()).strip()
-    #             title_tag = str(title_tag).replace('  ', ' ').strip()
-                
-            
-    #             if title_tag:
-    #                 title_tag = str(title_tag).replace('  ', ' ').strip()
-    #                 if len(title_tag) > 60: title_tag = str(title_tag).replace('| LookerOnline', '| LO')
-    #     except Exception as e:
-    #         self.print_logs(f'Exception in get_title_tag: {e}')
-    #         if self.DEBUG: print(f'Exception in get_title_tag: {e}')
-    #         else: pass
-    #     finally: return title_tag
-
-    # # get product description tag 
-    # def get_description_tag(self, brand: Brand, product: Product) -> str:
-    #     description_tag = ''
-    #     try:
-    #         template_path = f'{self.template_file_path}{brand.name}/{product.type}/meta_description.txt'
-    #         template = self.get_template(template_path)
-    #         if template:
-    #             description_tag = template
-    #             if '{Brand.Name}' in description_tag: description_tag = str(description_tag).replace('{Brand.Name}', str(brand.name).strip().title()).strip()
-    #             elif '{BRAND.NAME}' in description_tag: description_tag = str(description_tag).replace('{BRAND.NAME}', str(brand.name).strip().upper()).strip()
-    #             elif '{brand.name}' in description_tag: description_tag = str(description_tag).replace('{brand.name}', str(brand.name).strip().lower()).strip()
-    #             description_tag = str(description_tag).replace('  ', ' ').strip()
-
-    #             if '{Product.Number}' in description_tag: description_tag = str(description_tag).replace('{Product.Number}', str(product.number).strip().title()).strip()
-    #             elif '{PRODUCT.NUMBER}' in description_tag: description_tag = str(description_tag).replace('{PRODUCT.NUMBER}', str(product.number).strip().upper()).strip()
-    #             elif '{product.number}' in description_tag: description_tag = str(description_tag).replace('{product.number}', str(product.number).strip().lower()).strip()
-    #             description_tag = str(description_tag).replace('  ', ' ').strip()
-                
-    #             if str(product.name).strip(): 
-    #                 if '{Product.Name}' in description_tag: description_tag = str(description_tag).replace('{Product.Name}', str(product.name).strip().title())
-    #                 elif '{PRODUCT.NAME}' in description_tag: description_tag = str(description_tag).replace('{PRODUCT.NAME}', str(product.name).strip().upper())
-    #                 elif '{product.name}' in description_tag: description_tag = str(description_tag).replace('{product.name}', str(product.name).strip().lower())
-    #             else: 
-    #                 if '{Product.Name}' in description_tag: description_tag = str(description_tag).replace('{Product.Name}', '')
-    #                 elif '{PRODUCT.NAME}' in description_tag: description_tag = str(description_tag).replace('{PRODUCT.NAME}', '')
-    #                 elif '{product.name}' in description_tag: description_tag = str(description_tag).replace('{product.name}', '')
-    #             description_tag = str(description_tag).replace('  ', ' ').strip()
-                
-    #             if '{Product.Frame_Code}' in description_tag: description_tag = str(description_tag).replace('{Product.Frame_Code}', str(product.frame_code).strip().upper()).strip()
-    #             elif '{PRODUCT.FRAME_CODE}' in description_tag: description_tag = str(description_tag).replace('{PRODUCT.FRAME_CODE}', str(product.frame_code).strip().upper()).strip()
-    #             elif '{product.frame_code}' in description_tag: description_tag = str(description_tag).replace('{product.frame_code}', str(product.frame_code).strip().lower()).strip()
-    #             description_tag = str(description_tag).replace('  ', ' ').strip()
-
-    #             if '{Product.Frame_Color}' in description_tag: description_tag = str(description_tag).replace('{Product.Frame_Color}', str(product.frame_color).strip().title()).strip()
-    #             elif '{PRODUCT.FRAME_COLOR}' in description_tag: description_tag = str(description_tag).replace('{PRODUCT.FRAME_COLOR}', str(product.frame_color).strip().upper()).strip()
-    #             elif '{product.frame_color}' in description_tag: description_tag = str(description_tag).replace('{product.frame_color}', str(product.frame_color).strip().lower()).strip()
-    #             description_tag = str(description_tag).replace('  ', ' ').strip()
-
-    #             if '{Product.Lens_Code}' in description_tag: description_tag = str(description_tag).replace('{Product.Lens_Code}', str(product.lens_code).strip().title()).strip()
-    #             elif '{PRODUCT.LENS_CODE}' in description_tag: description_tag = str(description_tag).replace('{PRODUCT.LENS_CODE}', str(product.lens_code).strip().upper()).strip()
-    #             elif '{product.lens_code}' in description_tag: description_tag = str(description_tag).replace('{product.lens_code}', str(product.lens_code).strip().lower()).strip()
-    #             description_tag = str(description_tag).replace('  ', ' ').strip()
-
-    #             if '{Product.Lens_Color}' in description_tag: description_tag = str(description_tag).replace('{Product.Lens_Color}', str(product.lens_color).strip().title()).strip()
-    #             elif '{PRODUCT.LENS_COLOR}' in description_tag: description_tag = str(description_tag).replace('{PRODUCT.LENS_COLOR}', str(product.lens_color).strip().upper()).strip()
-    #             elif '{product.lens_color}' in description_tag: description_tag = str(description_tag).replace('{product.lens_color}', str(product.lens_color).strip().lower()).strip()
-    #             description_tag = str(description_tag).replace('  ', ' ').strip()
-
-    #             if '{Product.Type}' in description_tag: description_tag = str(description_tag).replace('{Product.Type}', str(product.type).strip().title()).strip()
-    #             elif '{PRODUCT.TYPE}' in description_tag: description_tag = str(description_tag).replace('{PRODUCT.TYPE}', str(product.type).strip().upper()).strip()
-    #             elif '{product.type}' in description_tag: description_tag = str(description_tag).replace('{product.type}', str(product.type).strip().lower()).strip()
-    #             description_tag = str(description_tag).replace('  ', ' ').strip()
-
-    #             # Metafields
-    #             if '{Product.Metafields.For_Who}' in description_tag: description_tag = str(description_tag).replace('{Product.Metafields.For_Who}', str(product.metafields.for_who).strip().title()).strip()
-    #             elif '{PRODUCT.METAFIELDS.FOR_WHO}' in description_tag: description_tag = str(description_tag).replace('{PRODUCT.METAFIELDS.FOR_WHO}', str(product.metafields.for_who).strip().upper()).strip()
-    #             elif '{product.metafields.for_who}' in description_tag: description_tag = str(description_tag).replace('{product.metafields.for_who}', str(product.metafields.for_who).strip().lower()).strip()
-    #             description_tag = str(description_tag).replace('  ', ' ').strip()
-
-    #             if '{Product.Metafields.Lens_Material}' in description_tag: description_tag = str(description_tag).replace('{Product.Metafields.Lens_Material}', str(product.metafields.lens_material).strip().title()).strip()
-    #             elif '{PRODUCT.METAFIELDS.LENS_MATERIAL}' in description_tag: description_tag = str(description_tag).replace('{PRODUCT.METAFIELDS.LENS_MATERIAL}', str(product.metafields.lens_material).strip().upper()).strip()
-    #             elif '{product.metafields.lens_material}' in description_tag: description_tag = str(description_tag).replace('{product.metafields.lens_material}', str(product.metafields.lens_material).strip().lower()).strip()
-    #             description_tag = str(description_tag).replace('  ', ' ').strip()
-
-    #             if '{Product.Metafields.Lens_Technology}' in description_tag: description_tag = str(description_tag).replace('{Product.Metafields.Lens_Technology}', str(product.metafields.lens_technology).strip().title()).strip()
-    #             elif '{PRODUCT.METAFIELDS.LENS_TECHNOLOGY}' in description_tag: description_tag = str(description_tag).replace('{PRODUCT.METAFIELDS.LENS_TECHNOLOGY}', str(product.metafields.lens_technology).strip().upper()).strip()
-    #             elif '{product.metafields.lens_technology}' in description_tag: description_tag = str(description_tag).replace('{product.metafields.lens_technology}', str(product.metafields.lens_technology).strip().lower()).strip()
-    #             description_tag = str(description_tag).replace('  ', ' ').strip()
-
-    #             if '{Product.Metafields.Frame_Material}' in description_tag: description_tag = str(description_tag).replace('{Product.Metafields.Frame_Material}', str(product.metafields.frame_material).strip().title()).strip()
-    #             elif '{PRODUCT.METAFIELDS.FRAME_MATERIAL}' in description_tag: description_tag = str(description_tag).replace('{PRODUCT.METAFIELDS.FRAME_MATERIAL}', str(product.metafields.frame_material).strip().upper()).strip()
-    #             elif '{product.metafields.frame_material}' in description_tag: description_tag = str(description_tag).replace('{product.metafields.frame_material}', str(product.metafields.frame_material).strip().lower()).strip()
-    #             description_tag = str(description_tag).replace('  ', ' ').strip()
-                
-    #             if '{Product.Metafields.Frame_Shape}' in description_tag: description_tag = str(description_tag).replace('{Product.Metafields.Frame_Shape}', str(product.metafields.frame_shape).strip().title()).strip()
-    #             elif '{PRODUCT.METAFIELDS.FRAME_SHAPE}' in description_tag: description_tag = str(description_tag).replace('{PRODUCT.METAFIELDS.FRAME_SHAPE}', str(product.metafields.frame_shape).strip().upper()).strip()
-    #             elif '{product.metafields.frame_shape}' in description_tag: description_tag = str(description_tag).replace('{product.metafields.frame_shape}', str(product.metafields.frame_shape).strip().lower()).strip()
-    #             description_tag = str(description_tag).replace('  ', ' ').strip()
-
-            
-    #             if description_tag:
-    #                 description_tag = str(description_tag).replace('  ', ' ').replace('âœ“', '✓').strip()
-    #         # description_tag = f'Buy {str(brand.name).strip().title()} {str(product.number).strip().upper()} {str(product.frame_code).strip().upper()} {str(product.name).strip().upper()} {str(product.metafields.for_who).strip().title()} {str(product.type).strip().title()}! ✓ Express WorldWide Shipping ✓ Secure Checkout ✓ 100% Original | LookerOnline |'
-    #         # if '  ' in description_tag: description_tag = str(description_tag).strip().replace('  ', ' ')
-    #     except Exception as e:
-    #         self.print_logs(f'Exception in get_description_tag: {e}')
-    #         if self.DEBUG: print(f'Exception in get_description_tag: {e}')
-    #         else: pass
-    #     finally: return description_tag
     
     # get specific matched metafileds from all metafields of product
     def get_matched_metafiled(self, shopify_metafields: list[dict], metafield_name: str):
@@ -864,17 +688,17 @@ class Digitalhub_Shopify:
                 else:
                     json_metafield = {"namespace": "my_fields", "key": "gtin1", "value": str(product.metafields.gtin1).strip(), "value_type": "string"}
                     shopify_processor.set_metafields_for_product(product.shopify_id, json_metafield)
-            if str(product.metafields.activity).strip():
-                metafield_found_status, metafield_id, shopify_metafield__activity = self.get_matched_metafiled(shopify_metafields, 'activity')
-                if metafield_found_status:
-                    if str(shopify_metafield__activity).strip() != str(product.metafields.activity).strip().title():
-                        old_activity = str(shopify_metafield__activity).strip().title()
-                        new_activity = str(product.metafields.activity).strip().title()
-                        if not shopify_processor.update_activity_metafield(metafield_id, new_activity, new_product_title):
-                            print(f'Failed to update product activity\nOld activity metafield: {old_activity}\nNew activity metafield: {new_activity}')
-                else:
-                    json_metafield = {"namespace": "my_fields", "key": "activity", "value": str(product.metafields.activity).strip(), "value_type": "string"}
-                    shopify_processor.set_metafields_for_product(product.shopify_id, json_metafield)
+            # if str(product.metafields.activity).strip():
+            #     metafield_found_status, metafield_id, shopify_metafield__activity = self.get_matched_metafiled(shopify_metafields, 'activity')
+            #     if metafield_found_status:
+            #         if str(shopify_metafield__activity).strip() != str(product.metafields.activity).strip().title():
+            #             old_activity = str(shopify_metafield__activity).strip().title()
+            #             new_activity = str(product.metafields.activity).strip().title()
+            #             if not shopify_processor.update_activity_metafield(metafield_id, new_activity, new_product_title):
+            #                 print(f'Failed to update product activity\nOld activity metafield: {old_activity}\nNew activity metafield: {new_activity}')
+            #     else:
+            #         json_metafield = {"namespace": "my_fields", "key": "activity", "value": str(product.metafields.activity).strip(), "value_type": "string"}
+            #         shopify_processor.set_metafields_for_product(product.shopify_id, json_metafield)
             if str(product.metafields.graduabile).strip():
                 metafield_found_status, metafield_id, shopify_metafield__graduabile = self.get_matched_metafiled(shopify_metafields, 'graduabile')
                 if metafield_found_status:
@@ -922,6 +746,115 @@ class Digitalhub_Shopify:
         except Exception as e:
             self.print_logs(f'Exception in check_product_metafields: {e}')
             if self.DEBUG: print(f'Exception in check_product_metafields: {e}')
+            else: pass
+
+    # check product italian_metafields of database with shopify
+    def check_product_italian_metafields(self, new_product_title: str, product: Product, shopify_italian_metafields: dict, shopify_processor: Shopify_Processor) -> None:
+        try:
+
+            if str(product.metafields.for_who).strip():
+                metafield_found_status, metafield_id, shopify_metafield__for_who = self.get_matched_metafiled(shopify_italian_metafields, 'per_chi')
+                if metafield_found_status:
+                    if str(shopify_metafield__for_who).strip().title() != str(product.metafields.for_who).strip().title():
+                        old_for_who = str(shopify_metafield__for_who).strip().title()
+                        new_for_who = str(product.metafields.for_who).strip().title()
+                        if not shopify_processor.update_for_who_metafield(metafield_id, new_for_who, new_product_title):
+                            print(f'Failed to update product gender metafield\nOld gender metafield: {old_for_who}\nNew gender metafield: {new_for_who}')
+                else:
+                    json_metafield = {"namespace": "italian", "key": "per_chi", "value": str(product.metafields.for_who).strip(), "value_type": "string"}
+                    shopify_processor.set_metafields_for_product(product.shopify_id, json_metafield)
+            if str(product.frame_color).strip():
+                metafield_found_status, metafield_id, shopify_metafield__frame_color = self.get_matched_metafiled(shopify_italian_metafields, 'colore_della_montatura')
+                if metafield_found_status:
+                    if str(shopify_metafield__frame_color).strip().title() != str(product.frame_color).strip().title():
+                        old_frame_color = str(shopify_metafield__frame_color).strip().title()
+                        new_frame_color = str(product.frame_color).strip().title()
+                        if not shopify_processor.update_frame_color_metafield(metafield_id, new_frame_color, new_product_title):
+                            print(f'Failed to update product frame color metafield\nOld frame color metafield: {old_frame_color}\nNew frame color metafield: {new_frame_color}')
+                else:
+                    json_metafield = {"namespace": "italian", "key": "colore_della_montatura", "value": str(product.frame_color).strip(), "value_type": "string"}
+                    shopify_processor.set_metafields_for_product(product.shopify_id, json_metafield)
+            if str(product.metafields.frame_material).strip():
+                metafield_found_status, metafield_id, shopify_metafield__frame_material = self.get_matched_metafiled(shopify_italian_metafields, 'materiale_della_montatura')
+                if metafield_found_status:
+                    if str(shopify_metafield__frame_material).strip().title() != str(product.metafields.frame_material).strip().title():
+                        old_frame_material = str(shopify_metafield__frame_material).strip().title()
+                        new_frame_material = str(product.metafields.frame_material).strip().title()
+                        if not shopify_processor.update_frame_material_metafield(metafield_id, new_frame_material, new_product_title):
+                            print(f'Failed to update product frame material metafield\nOld frame material metafield: {old_frame_material}\nNew frame material metafield: {new_frame_material}')
+                else:
+                    json_metafield = {"namespace": "italian", "key": "materiale_della_montatura", "value": str(product.metafields.frame_material).strip(), "value_type": "string"}
+                    shopify_processor.set_metafields_for_product(product.shopify_id, json_metafield)
+            if str(product.metafields.frame_shape).strip():
+                metafield_found_status, metafield_id, shopify_metafield__frame_shape = self.get_matched_metafiled(shopify_italian_metafields, 'forma')
+                if metafield_found_status:
+                    if str(shopify_metafield__frame_shape).strip().title() != str(product.metafields.frame_shape).strip().title():
+                        old_frame_shape = str(shopify_metafield__frame_shape).strip().title()
+                        new_frame_shape = str(product.metafields.frame_shape).strip().title()
+                        if not shopify_processor.update_frame_shape_metafield(metafield_id, new_frame_shape, new_product_title):
+                            print(f'Failed to update product frame shape metafield\nOld frame shape metafield: {old_frame_shape}\nNew frame_shape metafield: {new_frame_shape}')
+                else:
+                    json_metafield = {"namespace": "italian", "key": "forma", "value": str(product.metafields.frame_shape).strip(), "value_type": "string"}
+                    shopify_processor.set_metafields_for_product(product.shopify_id, json_metafield)
+            if str(product.lens_color).strip():
+                metafield_found_status, metafield_id, shopify_metafield__lens_color = self.get_matched_metafiled(shopify_italian_metafields, 'colore_della_lente')
+                if metafield_found_status:
+                    if str(product.lens_color).strip() and str(shopify_metafield__lens_color).strip().title() != str(product.lens_color).strip().title():
+                        old_lens_color = str(shopify_metafield__lens_color).strip().title()
+                        new_lens_color = str(product.lens_color).strip().title()
+                        if not shopify_processor.update_lens_color_metafield(metafield_id, new_lens_color, new_product_title):
+                            print(f'Failed to update product lens color metafield\nOld lens color metafield: {old_lens_color}\nNew lens color metafield: {new_lens_color}')
+                else:
+                    json_metafield = {"namespace": "italian", "key": "colore_della_lente", "value": str(product.lens_color).strip(), "value_type": "string"}
+                    shopify_processor.set_metafields_for_product(product.shopify_id, json_metafield)
+            if str(product.metafields.lens_technology).strip():
+                metafield_found_status, metafield_id, shopify_metafield__lens_technology = self.get_matched_metafiled(shopify_italian_metafields, 'tecnologia_della_lente')
+                if metafield_found_status:
+                    if str(product.metafields.lens_technology).strip() and str(shopify_metafield__lens_technology).strip().title() != str(product.metafields.lens_technology).strip().title():
+                        old_lens_technology = str(shopify_metafield__lens_technology).strip().title()
+                        new_lens_technology = str(product.metafields.lens_technology).strip().title()
+                        if not shopify_processor.update_lens_technology_metafield(metafield_id, new_lens_technology, new_product_title):
+                            print(f'Failed to update product lens technology metafield\nOld lens technology metafield: {old_lens_technology}\nNew lens technology metafield: {new_lens_technology}')
+                else:
+                    json_metafield = {"namespace": "italian", "key": "tecnologia_della_lente", "value": str(product.metafields.lens_technology).strip(), "value_type": "string"}
+                    shopify_processor.set_metafields_for_product(product.shopify_id, json_metafield)
+            if str(product.metafields.lens_material).strip():
+                metafield_found_status, metafield_id, shopify_metafield__lens_material = self.get_matched_metafiled(shopify_italian_metafields, 'materiale_della_lente')
+                if metafield_found_status:
+                    if str(shopify_metafield__lens_material).strip().title() != str(product.metafields.lens_material).strip().title():
+                        old_lens_material = str(shopify_metafield__lens_material).strip().title()
+                        new_lens_material = str(product.metafields.lens_material).strip().title()
+                        if not shopify_processor.update_lens_material_metafield(metafield_id, new_lens_material, new_product_title):
+                            print(f'Failed to update product lens material metafield\nOld lens material metafield: {old_lens_material}\nNew lens material metafield: {new_lens_material}')
+                else:
+                    json_metafield = {"namespace": "italian", "key": "materiale_della_lente", "value": str(product.metafields.lens_material).strip(), "value_type": "string"}
+                    shopify_processor.set_metafields_for_product(product.shopify_id, json_metafield)
+            if str(product.metafields.product_size).strip():
+                metafield_found_status, metafield_id, shopify_metafield__product_size = self.get_matched_metafiled(shopify_italian_metafields, 'calibro_ponte_asta')
+                if metafield_found_status:
+                    if str(shopify_metafield__product_size).strip() != str(product.metafields.product_size).strip():
+                        old_product_size = str(shopify_metafield__product_size).strip().title()
+                        new_product_size = str(product.metafields.product_size).strip().title()
+                        if not shopify_processor.update_gtin1_metafield(metafield_id, new_product_size, new_product_title):
+                            print(f'Failed to update product product size metafield\nOld product size metafield: {old_product_size}\nNew product size metafield: {new_product_size}')
+                else:
+                    json_metafield = {"namespace": "italian", "key": "calibro_ponte_asta", "value": str(product.metafields.product_size).strip(), "value_type": "string"}
+                    shopify_processor.set_metafields_for_product(product.shopify_id, json_metafield)
+            # if str(product.metafields.activity).strip():
+            #     metafield_found_status, metafield_id, shopify_metafield__activity = self.get_matched_metafiled(shopify_italian_metafields, 'attivita')
+            #     if metafield_found_status:
+            #         if str(shopify_metafield__activity).strip() != str(product.metafields.activity).strip().title():
+            #             old_activity = str(shopify_metafield__activity).strip().title()
+            #             new_activity = str(product.metafields.activity).strip().title()
+            #             if not shopify_processor.update_activity_metafield(metafield_id, new_activity, new_product_title):
+            #                 print(f'Failed to update product activity\nOld activity metafield: {old_activity}\nNew activity metafield: {new_activity}')
+            #     else:
+            #         json_metafield = {"namespace": "italian", "key": "attivita", "value": str(product.metafields.activity).strip(), "value_type": "string"}
+            #         shopify_processor.set_metafields_for_product(product.shopify_id, json_metafield)
+            
+        except Exception as e:
+            self.print_logs(f'Exception in check_product_metafields: {e}')
+            if self.DEBUG: print(f'Exception in check_product_metafields: {e}')
             else: pass                        
     
     # add product metafields to the shopify store
@@ -937,11 +870,40 @@ class Digitalhub_Shopify:
             if str(product.metafields.lens_technology).strip(): metafields.append({'namespace': 'my_fields', 'key': 'lens_technology', "value": str(product.metafields.lens_technology).strip(), "value_type": "string"})
             if str(product.metafields.product_size).strip(): metafields.append({'namespace': 'my_fields', 'key': 'product_size', "value": str(product.metafields.product_size).strip(), "value_type": "string"})
             if str(product.metafields.gtin1).strip(): metafields.append({'namespace': 'my_fields', 'key': 'gtin1', "value": str(product.metafields.gtin1).strip(), "value_type": "string"})
-        
+            # if str(product.metafields.activity).strip(): metafields.append({'namespace': 'my_fields', 'key': 'activity', "value": str(product.metafields.activity).strip(), "value_type": "string"})
             for metafield in metafields: 
                 shopify_processor.set_metafields_for_product(product.shopify_id, metafield)
         except Exception as e:
             if self.DEBUG: print(f'Exception in add_product_metafeilds: {e}')
+            else: pass
+
+    # add product italian metafields to the shopify store
+    def add_product_italian_metafeilds(self, product: Product, shopify_processor: Shopify_Processor) -> None:
+        metafields = []
+        try:
+            if str(product.metafields.for_who).strip(): 
+                metafields.append({"namespace": "italian", "key": "per_chi", "value": str(product.metafields.for_who).strip(), "value_type": "string"})
+            if str(product.frame_color).strip(): 
+                metafields.append({'namespace': 'italian', 'key': 'colore_della_montatura', "value": str(product.frame_color).strip(), "value_type": "string"})
+            if str(product.metafields.frame_material).strip(): 
+                metafields.append({'namespace': 'italian', 'key': 'materiale_della_montatura', "value": str(product.metafields.frame_material).strip(), "value_type": "string"})
+            if str(product.metafields.frame_shape).strip(): 
+                metafields.append({'namespace': 'italian', 'key': 'forma', "value": str(product.metafields.frame_shape).strip(), "value_type": "string"})
+            if str(product.lens_color).strip(): 
+                metafields.append({'namespace': 'italian', 'key': 'colore_della_lente', "value": str(product.lens_color).strip(), "value_type": "string"})
+            if str(product.metafields.lens_material).strip(): 
+                metafields.append({'namespace': 'italian', 'key': 'materiale_della_lente', "value": str(product.metafields.lens_material).strip(), "value_type": "string"})
+            if str(product.metafields.lens_technology).strip(): 
+                metafields.append({'namespace': 'italian', 'key': 'tecnologia_della_lente', "value": str(product.metafields.lens_technology).strip(), "value_type": "string"})
+            if str(product.metafields.product_size).strip(): 
+                metafields.append({'namespace': 'italian', 'key': 'calibro_ponte_asta', "value": str(product.metafields.product_size).strip(), "value_type": "string"})
+            # if str(product.metafields.activity).strip(): 
+            #     metafields.append({'namespace': 'italian', 'key': 'attivita', "value": str(product.metafields.activity).strip(), "value_type": "string"})
+        
+            for metafield in metafields: 
+                shopify_processor.set_metafields_for_product(product.shopify_id, metafield)
+        except Exception as e:
+            if self.DEBUG: print(f'Exception in add_product_italian_metafeilds: {e}')
             else: pass
 
     # check product variant and update them if needed
