@@ -184,9 +184,15 @@ class Keringeyewear_Shopify:
             template = str(template).replace('  ', ' ').strip()
 
             # Metafields
-            if '{Product.Metafields.For_Who}' in template: template = str(template).replace('{Product.Metafields.For_Who}', str(product.metafields.for_who).strip().title()).strip()
-            elif '{PRODUCT.METAFIELDS.FOR_WHO}' in template: template = str(template).replace('{PRODUCT.METAFIELDS.FOR_WHO}', str(product.metafields.for_who).strip().upper()).strip()
-            elif '{product.metafields.for_who}' in template: template = str(template).replace('{product.metafields.for_who}', str(product.metafields.for_who).strip().lower()).strip()
+            if '{Product.Metafields.For_Who}' in template: 
+                if 'unisex' in str(product.metafields.for_who).strip().lower(): template = str(template).replace('{Product.Metafields.For_Who}', 'MEN and WOMEN').strip()
+                else: template = str(template).replace('{Product.Metafields.For_Who}', str(product.metafields.for_who).strip().title()).strip()
+            elif '{PRODUCT.METAFIELDS.FOR_WHO}' in template:
+                if 'unisex' in str(product.metafields.for_who).strip().lower(): template = str(template).replace('{Product.Metafields.For_Who}', 'Men and Women').strip() 
+                else: template = str(template).replace('{PRODUCT.METAFIELDS.FOR_WHO}', str(product.metafields.for_who).strip().upper()).strip()
+            elif '{product.metafields.for_who}' in template:
+                if 'unisex' in str(product.metafields.for_who).strip().lower(): template = str(template).replace('{Product.Metafields.For_Who}', 'men and women').strip()
+                else: template = str(template).replace('{product.metafields.for_who}', str(product.metafields.for_who).strip().lower()).strip()
             template = str(template).replace('  ', ' ').strip()
 
             if '{Product.Metafields.Lens_Material}' in template: template = str(template).replace('{Product.Metafields.Lens_Material}', str(product.metafields.lens_material).strip().title()).strip()
