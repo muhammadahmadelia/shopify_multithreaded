@@ -54,7 +54,9 @@ class Shopify_Processor:
                         products += list(json_data['products'])
                         break
                     elif response.status_code == 429: sleep(0.1)
-                    else: self.print_logs(f'{response.status_code} found in getting products by vendor')
+                    else: 
+                        self.print_logs(f'{response.status_code} found in getting products by vendor')
+                        sleep(1)
                 try:
                     page_info = ''
                     link = str(response.headers['Link']).strip()
@@ -86,7 +88,9 @@ class Shopify_Processor:
                     flag = True
                 elif response.status_code == 429: sleep(0.1)
                 elif response.status_code == 404: break
-                else: self.print_logs(f'{response.status_code} found in getting product', response.text)
+                else: 
+                    self.print_logs(f'{response.status_code} found in getting product', response.text)
+                    sleep(1)
         except Exception as e:
             if self.DEBUG: print(f'Exception in get_product: {e}')
             self.print_logs(f'Exception in get_product: {e}')
@@ -103,7 +107,9 @@ class Shopify_Processor:
                 response = self.session.put(url=(self.URL + endpoint), json=json)
                 if response.status_code == 200: update_flag = True                
                 elif response.status_code == 429: sleep(0.1)
-                else: self.print_logs(f'{response.status_code} found in updating product title')
+                else: 
+                    self.print_logs(f'{response.status_code} found in updating product title')
+                    sleep(1)
                 counter += 1
                 if counter == 10: break
         except Exception as e:
@@ -122,7 +128,9 @@ class Shopify_Processor:
                 response = self.session.put(url=(self.URL + endpoint), json=json)
                 if response.status_code == 200: update_flag = True                
                 elif response.status_code == 429: sleep(0.1)
-                else: self.print_logs(f'{response.status_code} found in updating product body_html')
+                else: 
+                    self.print_logs(f'{response.status_code} found in updating product body_html')
+                    sleep(1)
                 counter += 1
                 if counter == 10: break
         except Exception as e:
@@ -141,7 +149,9 @@ class Shopify_Processor:
                 response = self.session.put(url=(self.URL + endpoint), json=json)
                 if response.status_code == 200: update_flag = True                
                 elif response.status_code == 429: sleep(0.1)
-                else: self.print_logs(f'{response.status_code} found in updating product status')
+                else: 
+                    self.print_logs(f'{response.status_code} found in updating product status')
+                    sleep(1)
                 counter += 1
                 if counter == 10: break
         except Exception as e:
@@ -160,7 +170,9 @@ class Shopify_Processor:
                 response = self.session.put(url=(self.URL + endpoint), json=json)
                 if response.status_code == 200: update_flag = True                
                 elif response.status_code == 429: sleep(0.1)
-                else: self.print_logs(f'{response.status_code} found in updating product type')
+                else: 
+                    self.print_logs(f'{response.status_code} found in updating product type')
+                    sleep(1)
                 counter += 1
                 if counter == 10: break
         except Exception as e:
@@ -179,7 +191,9 @@ class Shopify_Processor:
                 response = self.session.put(url=(self.URL + endpoint), json=json)
                 if response.status_code == 200: update_flag = True                
                 elif response.status_code == 429: sleep(0.1)
-                else: self.print_logs(f'{response.status_code} found in updating product tags')
+                else: 
+                    self.print_logs(f'{response.status_code} found in updating product tags')
+                    sleep(1)
                 counter += 1
                 if counter == 10: break
         except Exception as e:
@@ -203,7 +217,9 @@ class Shopify_Processor:
                 response = self.session.post(url=(self.URL + endpoint), json=json_value)
                 if response.status_code == 200: updation_flag = True
                 elif response.status_code == 429: sleep(1)
-                else: self.print_logs(f'Failed to add image to product: {product_title}')
+                else: 
+                    self.print_logs(f'Failed to add image to product: {product_title}')
+                    sleep(1)
                 counter += 1
                 if counter == 10: break
         # else: self.print_logs(f'Failed to download image for {product_title}')
@@ -223,7 +239,9 @@ class Shopify_Processor:
                 response = self.session.put(url=(self.URL + endpoint), json=json_value)
                 if response.status_code == 200: updation_flag = True
                 elif response.status_code == 429: sleep(1)
-                else: self.print_logs(f'Failed to update alt text of image: {product_title} status code: {response.status_code}')
+                else: 
+                    self.print_logs(f'Failed to update alt text of image: {product_title} status code: {response.status_code}')
+                    sleep(1)
                 counter += 1
                 if counter == 10: break
         # else: self.print_logs(f'Failed to download image for {product_title}')
@@ -261,7 +279,9 @@ class Shopify_Processor:
                     elif response.status_code == 404: 
                         self.print_logs(f'404 in downloading this image {url}')
                         break
-                    else: self.print_logs(f'{response.status_code} found for downloading image')
+                    else: 
+                        self.print_logs(f'{response.status_code} found for downloading image')
+                        sleep(1)
                 except: pass
         except Exception as e:
             if self.DEBUG: print(f'Exception in download_image: {str(e)}')
@@ -298,7 +318,9 @@ class Shopify_Processor:
                 response = self.session.delete(url=(self.URL + endpoint))
                 if response.status_code == 200: updation_flag = True
                 elif response.status_code == 429: sleep(1)
-                else: self.print_logs(f'Failed to delete image to product: {product_title}')
+                else: 
+                    self.print_logs(f'Failed to delete image to product: {product_title}')
+                    sleep(1)
                 counter += 1
                 if counter == 10: break
         except Exception as e:
@@ -317,7 +339,9 @@ class Shopify_Processor:
                 response = self.session.put(url=(self.URL + endpoint), json=json)
                 if response.status_code == 200: update_flag = True                
                 elif response.status_code == 429: sleep(0.1)
-                else: self.print_logs(f'{response.status_code} found in updating product option')
+                else: 
+                    self.print_logs(f'{response.status_code} found in updating product option')
+                    sleep(1)
                 counter += 1
                 if counter == 10: break
         except Exception as e:
@@ -619,7 +643,7 @@ class Shopify_Processor:
                                 self.update_product_options(option['product_id'], option['id'], 'Size')
 
                     flag = True
-                elif response.status_code == 429: sleep(1)
+                elif response.status_code == 429 or response.status_code == 430: sleep(1)
                 else: 
                     self.print_logs(f'{response.status_code} found by inserting product to shopify: {product_title} Text: {response.text}')
                     break
@@ -655,7 +679,9 @@ class Shopify_Processor:
                     shopify_product_metafields = json.loads(response.text)
                     flag = True
                 elif response.status_code == 429: sleep(0.1)
-                else: self.print_logs(f'{response.status_code} found in getting product metafields', response.text)
+                else: 
+                    self.print_logs(f'{response.status_code} found in getting product metafields', response.text)
+                    sleep(1)
         except Exception as e:
             if self.DEBUG: print(f'Exception in get_product_metafields: {e}')
             self.print_logs(f'Exception in get_product_metafields: {e}')
@@ -674,7 +700,9 @@ class Shopify_Processor:
                     shopify_product_italian_metafields = json.loads(response.text)
                     flag = True
                 elif response.status_code == 429: sleep(0.1)
-                else: self.print_logs(f'{response.status_code} found in getting product italian metafields', response.text)
+                else: 
+                    self.print_logs(f'{response.status_code} found in getting product italian metafields', response.text)
+                    sleep(1)
         except Exception as e:
             if self.DEBUG: print(f'Exception in get_product_italian_metafields_from_shopify: {e}')
             self.print_logs(f'Exception in get_product_italian_metafields_from_shopify: {e}')
@@ -691,7 +719,9 @@ class Shopify_Processor:
                 response = self.session.put(url=(self.URL + endpoint), json=json_value)
                 if response.status_code == 200: updation_flag = True
                 elif response.status_code == 429: sleep(1)
-                else: self.print_logs(f'Failed to update for_who metafield for product: {product_title}', response.text, response.status_code)
+                else: 
+                    self.print_logs(f'Failed to update for_who metafield for product: {product_title}', response.text, response.status_code)
+                    sleep(1)
                 counter += 1
                 if counter == 10: break
         except Exception as e:
@@ -710,7 +740,9 @@ class Shopify_Processor:
                 response = self.session.put(url=(self.URL + endpoint), json=json_value)
                 if response.status_code == 200: updation_flag = True
                 elif response.status_code == 429: sleep(1)
-                else: self.print_logs(f'Failed to update frame_color metafield for product: {product_title}')
+                else: 
+                    self.print_logs(f'Failed to update frame_color metafield for product: {product_title}')
+                    sleep(1)
                 counter += 1
                 if counter == 10: break
         except Exception as e:
@@ -729,7 +761,9 @@ class Shopify_Processor:
                 response = self.session.put(url=(self.URL + endpoint), json=json_value)
                 if response.status_code == 200: updation_flag = True
                 elif response.status_code == 429: sleep(1)
-                else: self.print_logs(f'Failed to update frame_material metafield for product: {product_title}')
+                else: 
+                    self.print_logs(f'Failed to update frame_material metafield for product: {product_title}')
+                    sleep(1)
                 counter += 1
                 if counter == 10: break
         except Exception as e:
@@ -748,7 +782,9 @@ class Shopify_Processor:
                 response = self.session.put(url=(self.URL + endpoint), json=json_value)
                 if response.status_code == 200: updation_flag = True
                 elif response.status_code == 429: sleep(1)
-                else: self.print_logs(f'Failed to update frame_shape metafield for product: {product_title}')
+                else: 
+                    self.print_logs(f'Failed to update frame_shape metafield for product: {product_title}')
+                    sleep(1)
                 counter += 1
                 if counter == 10: break
         except Exception as e:
@@ -767,7 +803,9 @@ class Shopify_Processor:
                 response = self.session.put(url=(self.URL + endpoint), json=json_value)
                 if response.status_code == 200: updation_flag = True
                 elif response.status_code == 429: sleep(1)
-                else: self.print_logs(f'Failed to update lens_color metafield for product: {product_title}')
+                else: 
+                    self.print_logs(f'Failed to update lens_color metafield for product: {product_title}')
+                    sleep(1)
                 counter += 1
                 if counter == 10: break
         except Exception as e:
@@ -786,7 +824,9 @@ class Shopify_Processor:
                 response = self.session.put(url=(self.URL + endpoint), json=json_value)
                 if response.status_code == 200: updation_flag = True
                 elif response.status_code == 429: sleep(1)
-                else: self.print_logs(f'Failed to update lens_technology metafield for product: {product_title}')
+                else: 
+                    self.print_logs(f'Failed to update lens_technology metafield for product: {product_title}')
+                    sleep(1)
                 counter += 1
                 if counter == 10: break
         except Exception as e:
@@ -805,7 +845,9 @@ class Shopify_Processor:
                 response = self.session.put(url=(self.URL + endpoint), json=json_value)
                 if response.status_code == 200: updation_flag = True
                 elif response.status_code == 429: sleep(1)
-                else: self.print_logs(f'Failed to update lens_material metafield for product: {product_title}')
+                else: 
+                    self.print_logs(f'Failed to update lens_material metafield for product: {product_title}')
+                    sleep(1)
                 counter += 1
                 if counter == 10: break
         except Exception as e:
@@ -824,7 +866,9 @@ class Shopify_Processor:
                 response = self.session.put(url=(self.URL + endpoint), json=json_value)
                 if response.status_code == 200: updation_flag = True
                 elif response.status_code == 429: sleep(1)
-                else: self.print_logs(f'Failed to update product_size metafield for product: {product_title}')
+                else: 
+                    self.print_logs(f'Failed to update product_size metafield for product: {product_title}')
+                    sleep(1)
                 counter += 1
                 if counter == 10: break
         except Exception as e:
@@ -843,7 +887,9 @@ class Shopify_Processor:
                 response = self.session.put(url=(self.URL + endpoint), json=json_value)
                 if response.status_code == 200: updation_flag = True
                 elif response.status_code == 429: sleep(1)
-                else: self.print_logs(f'Failed to update gtin1 metafield for product: {product_title}',json_value)
+                else: 
+                    self.print_logs(f'Failed to update gtin1 metafield for product: {product_title}',json_value)
+                    sleep(1)
                 counter += 1
                 if counter == 10: break
         except Exception as e:
@@ -862,7 +908,9 @@ class Shopify_Processor:
                 response = self.session.put(url=(self.URL + endpoint), json=json_value)
                 if response.status_code == 200: updation_flag = True
                 elif response.status_code == 429: sleep(1)
-                else: self.print_logs(f'Failed to update activity metafield for product: {product_title}')
+                else: 
+                    self.print_logs(f'Failed to update activity metafield for product: {product_title}')
+                    sleep(1)
                 counter += 1
                 if counter == 10: break
         except Exception as e:
@@ -881,7 +929,9 @@ class Shopify_Processor:
                 response = self.session.put(url=(self.URL + endpoint), json=json_value)
                 if response.status_code == 200: updation_flag = True
                 elif response.status_code == 429: sleep(1)
-                else: self.print_logs(f'Failed to update graduabile metafield for product: {product_title}')
+                else: 
+                    self.print_logs(f'Failed to update graduabile metafield for product: {product_title}')
+                    sleep(1)
                 counter += 1
                 if counter == 10: break
         except Exception as e:
@@ -900,7 +950,9 @@ class Shopify_Processor:
                 response = self.session.put(url=(self.URL + endpoint), json=json_value)
                 if response.status_code == 200: updation_flag = True
                 elif response.status_code == 429: sleep(1)
-                else: self.print_logs(f'Failed to update interest metafield for product: {product_title}')
+                else: 
+                    self.print_logs(f'Failed to update interest metafield for product: {product_title}')
+                    sleep(1)
                 counter += 1
                 if counter == 10: break
         except Exception as e:
@@ -919,7 +971,9 @@ class Shopify_Processor:
                 response = self.session.put(url=(self.URL + endpoint), json=json_value, timeout=20)
                 if response.status_code == 200: updation_flag = True
                 elif response.status_code == 429: sleep(1)
-                else: self.print_logs(f'Failed to update description_tag metafield for product: {product_title}')
+                else: 
+                    self.print_logs(f'Failed to update description_tag metafield for product: {product_title}')
+                    sleep(1)
                 counter += 1
                 if counter == 10: break
         except Exception as e:
@@ -938,7 +992,9 @@ class Shopify_Processor:
                 response = self.session.put(url=(self.URL + endpoint), json=json_value)
                 if response.status_code == 200: updation_flag = True
                 elif response.status_code == 429: sleep(1)
-                else: self.print_logs(f'Failed to update title_tag metafield for product: {product_title}')
+                else: 
+                    self.print_logs(f'Failed to update title_tag metafield for product: {product_title}')
+                    sleep(1)
                 counter += 1
                 if counter == 10: break
         except Exception as e:
@@ -956,7 +1012,9 @@ class Shopify_Processor:
                 response = self.session.post(url=(self.URL + endpoint), json=json_data)
                 if response.status_code == 201: metafield_flag = True
                 elif response.status_code == 429: sleep(1)
-                else: self.print_logs(f'{response.status_code} in adding product metafield {json_data}')
+                else: 
+                    self.print_logs(f'{response.status_code} in adding product metafield {json_data}')
+                    sleep(1)
                 counter += 1
                 if counter == 10: break
         except Exception as e:
@@ -977,7 +1035,9 @@ class Shopify_Processor:
                 response = self.session.put(url=(self.URL + endpoint), json=json_value)
                 if response.status_code == 200: updation_flag = True
                 elif response.status_code == 429: sleep(1)
-                else: self.print_logs(f'Failed to update title of variant for product: {product_title}')
+                else: 
+                    self.print_logs(f'Failed to update title of variant for product: {product_title}')
+                    sleep(1)
                 counter += 1
                 if counter == 10: break
         except Exception as e:
@@ -996,7 +1056,9 @@ class Shopify_Processor:
                 response = self.session.put(url=(self.URL + endpoint), json=json_value)
                 if response.status_code == 200: updation_flag = True
                 elif response.status_code == 429: sleep(1)
-                else: self.print_logs(f'Failed to update sku of variant for product: {product_title}')
+                else: 
+                    self.print_logs(f'Failed to update sku of variant for product: {product_title}')
+                    sleep(1)
                 counter += 1
                 if counter == 10: break
         except Exception as e:
@@ -1015,7 +1077,9 @@ class Shopify_Processor:
                 response = self.session.put(url=(self.URL + endpoint), json=json_value)
                 if response.status_code == 200: updation_flag = True
                 elif response.status_code == 429: sleep(1)
-                else: self.print_logs(f'Failed to update price of variant for product: {product_title}')
+                else: 
+                    self.print_logs(f'Failed to update price of variant for product: {product_title}')
+                    sleep(1)
                 counter += 1
                 if counter == 10: break
         except Exception as e:
@@ -1034,7 +1098,9 @@ class Shopify_Processor:
                 response = self.session.put(url=(self.URL + endpoint), json=json_value)
                 if response.status_code == 200: updation_flag = True
                 elif response.status_code == 429: sleep(1)
-                else: self.print_logs(f'Failed to update compare_at_price of variant for product: {product_title}')
+                else: 
+                    self.print_logs(f'Failed to update compare_at_price of variant for product: {product_title}')
+                    sleep(1)
                 counter += 1
                 if counter == 10: break
         except Exception as e:
@@ -1055,7 +1121,9 @@ class Shopify_Processor:
                     inventory_levels = json_data['inventory_levels']
                     location_id = inventory_levels[0]['location_id']
                 elif response.status_code == 429: sleep(0.1)
-                else: self.print_logs(f'{response.status_code} getting inventory level')
+                else: 
+                    self.print_logs(f'{response.status_code} getting inventory level')
+                    sleep(1)
                 counter += 1
                 if counter == 10: break
         except Exception as e:
@@ -1076,7 +1144,9 @@ class Shopify_Processor:
                     inventory_levels = json_data['locations']
                     location_id = inventory_levels[0]['id']
                 elif response.status_code == 429: sleep(0.1)
-                else: self.print_logs(f'{response.status_code} getting inventory level')
+                else: 
+                    self.print_logs(f'{response.status_code} getting inventory level')
+                    sleep(1)
                 counter += 1
                 if counter == 10: break
         except Exception as e:
@@ -1125,7 +1195,9 @@ class Shopify_Processor:
                     updation_flag = True
                     # else: self.print_logs(response.text)
                 elif response.status_code == 429: sleep(0.1)
-                else: self.print_logs(f'{response.status_code} found in updating product inventory quantity of product: {product_title}')
+                else: 
+                    self.print_logs(f'{response.status_code} found in updating product inventory quantity of product: {product_title}')
+                    sleep(1)
                 counter += 1
                 if counter == 10: break
         except Exception as e:
@@ -1144,7 +1216,9 @@ class Shopify_Processor:
                 response = self.session.put(url=(self.URL + endpoint), json=json_value)
                 if response.status_code == 200: updation_flag = True
                 elif response.status_code == 429: sleep(1)
-                else: self.print_logs(f'Failed to update barcode of variant for product: {product_title}')
+                else: 
+                    self.print_logs(f'Failed to update barcode of variant for product: {product_title}')
+                    sleep(1)
                 counter += 1
                 if counter == 10: break
         except Exception as e:
@@ -1162,7 +1236,9 @@ class Shopify_Processor:
                 response = self.session.put(url=(self.URL + endpoint), json=json_data)
                 if response.status_code == 200: country_code_flag = True
                 elif response.status_code == 429: sleep(1)
-                else: self.print_logs(f'{response.status_code} in adding country code')
+                else: 
+                    self.print_logs(f'{response.status_code} in adding country code')
+                    sleep(1)
                 counter += 1
                 if counter == 10: break
         except Exception as e:
@@ -1218,7 +1294,8 @@ class Shopify_Processor:
 
                     flag = True
                 elif response.status_code == 429: sleep(1)
-                else: 
+                else:
+                    sleep(1)
                     self.print_logs(f'{response.status_code} {response.text} found by inserting variant {title} to the product : {product_title}')
                     counter += 1
                     if counter == 10: break

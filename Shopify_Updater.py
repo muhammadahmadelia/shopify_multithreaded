@@ -220,6 +220,7 @@ class Shopify_Updater:
             if str(new_product_title).strip() != str(shopify_product['title']).strip():
                 if not shopify_processor.update_product_title(product.shopify_id, new_product_title):
                     print(f'Failed to update product title\n Old Product Title: {shopify_product["title"]}\nNew Product Title: {new_product_title}')
+                else: print(f'New title: {new_product_title}')
         except Exception as e:
             self.print_logs(f'Exception in check_product_title: {e}')
             if self.DEBUG: print(f'Excepption in check_product_title: {e}')
@@ -232,6 +233,7 @@ class Shopify_Updater:
             if str(product_description).strip() != str(shopify_product['body_html']).strip():
                 if not shopify_processor.update_product_body_html(product.shopify_id, str(product_description).strip()):
                     print(f'Failed to update product description\n Old Product Description: {shopify_product["body_html"]}\nNew Product Description: {str(product_description).strip()}')
+                else: print(f'New Product Description: {product_description}')
         except Exception as e:
             self.print_logs(f'Exception in check_product_description: {e}')
             if self.DEBUG: print(f'Excepption in check_product_description: {e}')
@@ -248,6 +250,7 @@ class Shopify_Updater:
                         new_title_tag = str(meta_title).strip()
                         if not shopify_processor.update_title_tag_metafield(metafield_id, new_title_tag, new_product_title):
                             print(f'Failed to update product meta title\nOld meta title: {old_title_tag}\nNew meta title: {new_title_tag}')
+                        else: print(f'New meta title: {new_title_tag}')
                 else:
                     json_metafield = {'namespace': 'global', 'key': 'title_tag', "value": str(meta_title).strip(), "value_type": "string"}
                     shopify_processor.set_metafields_for_product(product.shopify_id, json_metafield)
@@ -264,9 +267,10 @@ class Shopify_Updater:
                 if metafield_found_status:
                     if str(shopify_metafield__description_tag).strip() != str(meta_description).strip():
                         old_description_tag = str(shopify_metafield__description_tag).strip().title()
-                        new_description_tag = meta_description
+                        new_description_tag = str(meta_description).strip()
                         if not shopify_processor.update_description_tag_metafield(metafield_id, new_description_tag, new_product_title):
                             print(f'Failed to update product meta description\nOld meta description: {old_description_tag}\nNew meta description: {new_description_tag}')
+                        else: print(f'New meta Description: {new_description_tag}')
                 else:
                     json_metafield = {'namespace': 'global', 'key': 'description_tag', "value": str(meta_description).strip(), "value_type": "string"}
                     shopify_processor.set_metafields_for_product(product.shopify_id, json_metafield)
@@ -488,6 +492,8 @@ try:
     pathofpyfolder = os.path.realpath(sys.argv[0])
     # get path of Exe folder
     path = pathofpyfolder.replace(pathofpyfolder.split('\\')[-1], '')
+
+    if '.exe' in pathofpyfolder.split('\\')[-1]: DEBUG = False
     
     Shopify_Controller(DEBUG, path).controller()
 
