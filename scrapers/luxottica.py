@@ -88,11 +88,10 @@ class Luxottica_Scraper:
 
                                     while int(scraped_products) != int(total_products):
                                         for product_div in self.get_product_divs_on_page():
-                                            ActionChains(self.browser).move_to_element(product_div.find_element(By.CSS_SELECTOR, 'div[class^="Tile__SeeAllContainer"] > div > button')).perform()
-
-                                            scraped_products += 1
-
                                             try:
+                                                ActionChains(self.browser).move_to_element(product_div.find_element(By.CSS_SELECTOR, 'div[class^="Tile__SeeAllContainer"] > div > button')).perform()
+
+                                                scraped_products += 1
                                                 url = str(product_div.find_element(By.CSS_SELECTOR, 'a[class^="Tile__ImageContainer"]').get_attribute('href'))
                                                 identifier = str(url).split('/')[-1].strip()
 
