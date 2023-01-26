@@ -169,7 +169,7 @@ class Safilo_Scraper:
                                                 elif str('Product Unavailable').strip().lower() in str(avail_value).strip().lower(): variant.inventory_quantity = 1
 
                                                 price_value = str(div.find_element(By.CSS_SELECTOR, "div[class*='product_retail pull-right hidden-xs']").text).strip()
-                                                variant.price = price_value.split(' ')[-1].replace(',', '.')
+                                                variant.listing_price = price_value.split(' ')[-1].replace(',', '.')
                                                 
                                                 product.variants = variant
                                         except Exception as e:

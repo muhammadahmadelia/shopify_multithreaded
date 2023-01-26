@@ -528,7 +528,7 @@ class Keringeyewear_Scraper:
             try:
                 for span_tag in soup.select('div[class^="srp price-srp"] >span'):
                     if '€' in str(span_tag.text).strip(): 
-                        variant.price = str(span_tag.text).strip().replace('€', '').strip()
+                        variant.listing_price = str(span_tag.text).strip().replace('€', '').strip()
                         break
             except Exception as e: 
                 if self.DEBUG: print(f'Exception in variant.price: {e}')
