@@ -96,14 +96,15 @@ class Keringeyewear_Scraper:
                         for product_div in self.browser.find_elements(By.XPATH, '//div[@class="product-item space purchasable-plp set-border "]'):
                             try:
                                 scraped_products += 1
-                                ActionChains(self.browser).move_to_element(product_div).perform()
+                                # ActionChains(self.browser).move_to_element(product_div).perform()
 
                                 product_url = product_div.find_element(By.CSS_SELECTOR, 'a[class^="name"]').get_attribute('data-producturl')
                                 if 'https://my.keringeyewear.com' not in product_url: product_url = f'https://my.keringeyewear.com{product_url}'
                                 product_number = str(product_div.find_element(By.CSS_SELECTOR, 'a[class^="name"] > span').text).strip()
 
                                 self.create_thread(brand, glasses_type, product_number, product_url, headers)
-                                if self.thread_counter >= 10: 
+                                sleep(0.5)
+                                if self.thread_counter >= 40: 
                                     self.wait_for_thread_list_to_complete()
                                     self.save_to_json(self.data)
 
@@ -247,7 +248,7 @@ class Keringeyewear_Scraper:
         while True:
             try:
                 if total_products == 0:
-                    try: total_products = int(str(self.browser.find_element(By.XPATH, '//div[@class="col-md-11 kering-gray"]').text).strip().split(' ')[0])
+                    try: total_products = int(str(self.browser.find_element(By.CSS_SELECTOR, 'div[class*="col-md-11 kering-gray"]').text).strip().split(' ')[0])
                     except: pass
                     # print(f'Total Products: {total_products}')
                 try: found_products = len(self.browser.find_elements(By.XPATH, '//div[@class="product-item space purchasable-plp set-border "]'))
@@ -256,10 +257,11 @@ class Keringeyewear_Scraper:
                 if int(total_products) == int(found_products): break
                 else:
                     if self.is_xpath_found('//div[@class="col-md-12 show-more-button"]'):
-                        button = self.browser.find_element(By.XPATH, '//div[@class="col-md-12 show-more-button"]')
-                        actions = ActionChains(self.browser)
-                        actions.move_to_element(button).perform()
-                        button.click()
+                        # button = self.browser.find_element(By.XPATH, '//div[@class="col-md-12 show-more-button"]')
+                        # actions = ActionChains(self.browser)
+                        # actions.move_to_element(button).perform()
+                        # button.click()
+                        self.browser.find_element(By.XPATH, '//div[@class="col-md-12 show-more-button"]').click()
                         # self.wait_until_browsing()
                         self.wait_until_loading()
                         sleep(0.8)
