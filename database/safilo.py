@@ -13,11 +13,12 @@ class Safilo_Database:
         try:
             print('Updating Database for')
             for brand in store.brands:
-                print(f'Brand: {brand.name} | No. of Products {len(brand.products)}')
-                self.printProgressBar(0, len(brand.products), prefix = 'Progress:', suffix = 'Complete', length = 50)
 
                 new_products_by_brand = 0
                 if len(brand.products) > 0:
+                    print(f'Brand: {brand.name} | No. of Products {len(brand.products)}')
+                    self.printProgressBar(0, len(brand.products), prefix = 'Progress:', suffix = 'Complete', length = 50)
+
                     # update all variants of variant found status to 0
                     variants_by_brand_from_database =  query_processor.get_variants_by_brand_id(brand.id)
                     for variant_by_brand_from_database in variants_by_brand_from_database:

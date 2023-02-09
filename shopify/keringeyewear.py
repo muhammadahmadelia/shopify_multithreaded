@@ -784,7 +784,7 @@ class Keringeyewear_Shopify:
                         if not shopify_processor.update_for_who_metafield(metafield_id, new_for_who, new_product_title):
                             print(f'Failed to update product gender metafield\nOld gender metafield: {old_for_who}\nNew gender metafield: {new_for_who}')
                 else:
-                    json_metafield = {"namespace": "my_fields", "key": "for_who", "value": str(product.metafields.for_who).strip(), "value_type": "string"}
+                    json_metafield = {"namespace": "my_fields", "key": "for_who", "value": str(product.metafields.for_who).strip(), "type": "single_line_text_field"}
                     shopify_processor.set_metafields_for_product(product.shopify_id, json_metafield)
             if str(product.frame_color).strip():
                 metafield_found_status, metafield_id, shopify_metafield__frame_color = self.get_matched_metafiled(shopify_metafields, 'frame_color')
@@ -795,7 +795,7 @@ class Keringeyewear_Shopify:
                         if not shopify_processor.update_frame_color_metafield(metafield_id, new_frame_color, new_product_title):
                             print(f'Failed to update product frame color metafield\nOld frame color metafield: {old_frame_color}\nNew frame color metafield: {new_frame_color}')
                 else:
-                    json_metafield = {"namespace": "my_fields", "key": "frame_color", "value": str(product.frame_color).strip(), "value_type": "string"}
+                    json_metafield = {"namespace": "my_fields", "key": "frame_color", "value": str(product.frame_color).strip(), "type": "single_line_text_field"}
                     shopify_processor.set_metafields_for_product(product.shopify_id, json_metafield)
             if str(product.metafields.frame_material).strip():
                 metafield_found_status, metafield_id, shopify_metafield__frame_material = self.get_matched_metafiled(shopify_metafields, 'frame_material')
@@ -806,7 +806,7 @@ class Keringeyewear_Shopify:
                         if not shopify_processor.update_frame_material_metafield(metafield_id, new_frame_material, new_product_title):
                             print(f'Failed to update product frame material metafield\nOld frame material metafield: {old_frame_material}\nNew frame material metafield: {new_frame_material}')
                 else:
-                    json_metafield = {"namespace": "my_fields", "key": "frame_material", "value": str(product.metafields.frame_material).strip(), "value_type": "string"}
+                    json_metafield = {"namespace": "my_fields", "key": "frame_material", "value": str(product.metafields.frame_material).strip(), "type": "single_line_text_field"}
                     shopify_processor.set_metafields_for_product(product.shopify_id, json_metafield)
             if str(product.metafields.frame_shape).strip():
                 metafield_found_status, metafield_id, shopify_metafield__frame_shape = self.get_matched_metafiled(shopify_metafields, 'frame_shape')
@@ -817,7 +817,7 @@ class Keringeyewear_Shopify:
                         if not shopify_processor.update_frame_shape_metafield(metafield_id, new_frame_shape, new_product_title):
                             print(f'Failed to update product frame shape metafield\nOld frame shape metafield: {old_frame_shape}\nNew frame_shape metafield: {new_frame_shape}')
                 else:
-                    json_metafield = {"namespace": "my_fields", "key": "frame_shape", "value": str(product.metafields.frame_shape).strip(), "value_type": "string"}
+                    json_metafield = {"namespace": "my_fields", "key": "frame_shape", "value": str(product.metafields.frame_shape).strip(), "type": "single_line_text_field"}
                     shopify_processor.set_metafields_for_product(product.shopify_id, json_metafield)
             if str(product.lens_color).strip():
                 metafield_found_status, metafield_id, shopify_metafield__lens_color = self.get_matched_metafiled(shopify_metafields, 'lens_color')
@@ -828,7 +828,7 @@ class Keringeyewear_Shopify:
                         if not shopify_processor.update_lens_color_metafield(metafield_id, new_lens_color, new_product_title):
                             print(f'Failed to update product lens color metafield\nOld lens color metafield: {old_lens_color}\nNew lens color metafield: {new_lens_color}')
                 else:
-                    json_metafield = {"namespace": "my_fields", "key": "lens_color", "value": str(product.lens_color).strip(), "value_type": "string"}
+                    json_metafield = {"namespace": "my_fields", "key": "lens_color", "value": str(product.lens_color).strip(), "type": "single_line_text_field"}
                     shopify_processor.set_metafields_for_product(product.shopify_id, json_metafield)
             if str(product.metafields.lens_technology).strip():
                 metafield_found_status, metafield_id, shopify_metafield__lens_technology = self.get_matched_metafiled(shopify_metafields, 'lens_technology')
@@ -839,7 +839,7 @@ class Keringeyewear_Shopify:
                         if not shopify_processor.update_lens_technology_metafield(metafield_id, new_lens_technology, new_product_title):
                             print(f'Failed to update product lens technology metafield\nOld lens technology metafield: {old_lens_technology}\nNew lens technology metafield: {new_lens_technology}')
                 else:
-                    json_metafield = {"namespace": "my_fields", "key": "lens_technology", "value": str(product.metafields.lens_technology).strip(), "value_type": "string"}
+                    json_metafield = {"namespace": "my_fields", "key": "lens_technology", "value": str(product.metafields.lens_technology).strip(), "type": "single_line_text_field"}
                     shopify_processor.set_metafields_for_product(product.shopify_id, json_metafield)
             if str(product.metafields.lens_material).strip():
                 metafield_found_status, metafield_id, shopify_metafield__lens_material = self.get_matched_metafiled(shopify_metafields, 'lens_material')
@@ -850,7 +850,7 @@ class Keringeyewear_Shopify:
                         if not shopify_processor.update_lens_material_metafield(metafield_id, new_lens_material, new_product_title):
                             print(f'Failed to update product lens material metafield\nOld lens material metafield: {old_lens_material}\nNew lens material metafield: {new_lens_material}')
                 else:
-                    json_metafield = {"namespace": "my_fields", "key": "lens_material", "value": str(product.metafields.lens_material).strip(), "value_type": "string"}
+                    json_metafield = {"namespace": "my_fields", "key": "lens_material", "value": str(product.metafields.lens_material).strip(), "type": "single_line_text_field"}
                     shopify_processor.set_metafields_for_product(product.shopify_id, json_metafield)
             if str(product.metafields.product_size).strip():
                 metafield_found_status, metafield_id, shopify_metafield__product_size = self.get_matched_metafiled(shopify_metafields, 'product_size')
@@ -861,7 +861,7 @@ class Keringeyewear_Shopify:
                         if not shopify_processor.update_gtin1_metafield(metafield_id, new_product_size, new_product_title):
                             print(f'Failed to update product product size metafield\nOld product size metafield: {old_product_size}\nNew product size metafield: {new_product_size}')
                 else:
-                    json_metafield = {"namespace": "my_fields", "key": "product_size", "value": str(product.metafields.product_size).strip(), "value_type": "string"}
+                    json_metafield = {"namespace": "my_fields", "key": "product_size", "value": str(product.metafields.product_size).strip(), "type": "single_line_text_field"}
                     shopify_processor.set_metafields_for_product(product.shopify_id, json_metafield)
             if str(product.metafields.gtin1).strip():
                 metafield_found_status, metafield_id, shopify_metafield__gtin1 = self.get_matched_metafiled(shopify_metafields, 'gtin1')
@@ -872,7 +872,7 @@ class Keringeyewear_Shopify:
                         if not shopify_processor.update_gtin1_metafield(metafield_id, new_gtin1, new_product_title):
                             print(f'Failed to update product gtin metafield\nOld gtin metafield: {old_gtin1}\nNew gtin metafield: {new_gtin1}')
                 else:
-                    json_metafield = {"namespace": "my_fields", "key": "gtin1", "value": str(product.metafields.gtin1).strip(), "value_type": "string"}
+                    json_metafield = {"namespace": "my_fields", "key": "gtin1", "value": str(product.metafields.gtin1).strip(), "type": "single_line_text_field"}
                     shopify_processor.set_metafields_for_product(product.shopify_id, json_metafield)
             # if str(product.metafields.activity).strip():
             #     metafield_found_status, metafield_id, shopify_metafield__activity = self.get_matched_metafiled(shopify_metafields, 'activity')
@@ -883,7 +883,7 @@ class Keringeyewear_Shopify:
             #             if not shopify_processor.update_activity_metafield(metafield_id, new_activity, new_product_title):
             #                 print(f'Failed to update product activity\nOld activity metafield: {old_activity}\nNew activity metafield: {new_activity}')
             #     else:
-            #         json_metafield = {"namespace": "my_fields", "key": "activity", "value": str(product.metafields.activity).strip(), "value_type": "string"}
+            #         json_metafield = {"namespace": "my_fields", "key": "activity", "value": str(product.metafields.activity).strip(), "type": "single_line_text_field"}
             #         shopify_processor.set_metafields_for_product(product.shopify_id, json_metafield)
             if str(product.metafields.graduabile).strip():
                 metafield_found_status, metafield_id, shopify_metafield__graduabile = self.get_matched_metafiled(shopify_metafields, 'graduabile')
@@ -894,7 +894,7 @@ class Keringeyewear_Shopify:
                         if not shopify_processor.update_graduabile_metafield(metafield_id, new_graduabile, new_product_title):
                             print(f'Failed to update product graduabile metafield\nOld graduabile metafield: {old_graduabile}\nNew graduabile metafield: {new_graduabile}')
                 else:
-                    json_metafield = {"namespace": "my_fields", "key": "graduabile", "value": str(product.metafields.graduabile).strip(), "value_type": "string"}
+                    json_metafield = {"namespace": "my_fields", "key": "graduabile", "value": str(product.metafields.graduabile).strip(), "type": "single_line_text_field"}
                     shopify_processor.set_metafields_for_product(product.shopify_id, json_metafield)
             if str(product.metafields.interest).strip():
                 metafield_found_status, metafield_id, shopify_metafield__interest = self.get_matched_metafiled(shopify_metafields, 'interest')
@@ -905,18 +905,18 @@ class Keringeyewear_Shopify:
                         if not shopify_processor.update_interest_metafield(metafield_id, new_interest, new_product_title):
                             print(f'Failed to update product interest metafield\nOld interest metafield: {old_interest}\nNew interest metafield: {new_interest}')
                 else:
-                    json_metafield = {'namespace': 'my_fields', 'key': 'interest', "value": str(product.metafields.interest).strip(), "value_type": "string"}
+                    json_metafield = {'namespace': 'my_fields', 'key': 'interest', "value": str(product.metafields.interest).strip(), "type": "single_line_text_field"}
                     shopify_processor.set_metafields_for_product(product.shopify_id, json_metafield)
             if not self.DEBUG and str(title_tag).strip():
                 metafield_found_status, metafield_id, shopify_metafield__title_tag = self.get_matched_metafiled(shopify_metafields, 'title_tag')
                 if metafield_found_status:
-                    if str(shopify_metafield__title_tag).strip().lower() != str(title_tag).strip().lower():
+                    if str(shopify_metafield__title_tag).strip() != str(title_tag).strip():
                         old_title_tag = str(shopify_metafield__title_tag).strip().title()
                         new_title_tag = str(title_tag).strip()
                         if not shopify_processor.update_title_tag_metafield(metafield_id, new_title_tag, new_product_title):
                             print(f'Failed to update product meta title\nOld meta title: {old_title_tag}\nNew meta title: {new_title_tag}')
                 else:
-                    json_metafield = {'namespace': 'global', 'key': 'title_tag', "value": str(title_tag).strip(), "value_type": "string"}
+                    json_metafield = {'namespace': 'global', 'key': 'title_tag', "value": str(title_tag).strip(), "type": "single_line_text_field"}
                     shopify_processor.set_metafields_for_product(product.shopify_id, json_metafield)
             if not self.DEBUG and str(description_tag).strip():
                 metafield_found_status, metafield_id, shopify_metafield__description_tag = self.get_matched_metafiled(shopify_metafields, 'description_tag')
@@ -927,9 +927,10 @@ class Keringeyewear_Shopify:
                         if not shopify_processor.update_description_tag_metafield(metafield_id, new_description_tag, new_product_title):
                             print(f'Failed to update product meta description\nOld meta description: {old_description_tag}\nNew meta description: {new_description_tag}')
                 else:
-                    json_metafield = {'namespace': 'global', 'key': 'description_tag', "value": str(description_tag).strip(), "value_type": "string"}
+                    json_metafield = {'namespace': 'global', 'key': 'description_tag', "value": str(description_tag).strip(), "type": "single_line_text_field"}
                     shopify_processor.set_metafields_for_product(product.shopify_id, json_metafield)
-        except Exception as e:
+        
+        except Exception as e: 
             self.print_logs(f'Exception in check_product_metafields: {e}')
             if self.DEBUG: print(f'Exception in check_product_metafields: {e}')
             else: pass                        
@@ -947,7 +948,7 @@ class Keringeyewear_Shopify:
                         if not shopify_processor.update_for_who_metafield(metafield_id, new_for_who, new_product_title):
                             print(f'Failed to update product gender metafield\nOld gender metafield: {old_for_who}\nNew gender metafield: {new_for_who}')
                 else:
-                    json_metafield = {"namespace": "italian", "key": "per_chi", "value": str(product.metafields.for_who).strip(), "value_type": "string"}
+                    json_metafield = {"namespace": "italian", "key": "per_chi", "value": str(product.metafields.for_who).strip(), "type": "single_line_text_field"}
                     shopify_processor.set_metafields_for_product(product.shopify_id, json_metafield)
             if str(product.frame_color).strip():
                 metafield_found_status, metafield_id, shopify_metafield__frame_color = self.get_matched_metafiled(shopify_italian_metafields, 'colore_della_montatura')
@@ -958,7 +959,7 @@ class Keringeyewear_Shopify:
                         if not shopify_processor.update_frame_color_metafield(metafield_id, new_frame_color, new_product_title):
                             print(f'Failed to update product frame color metafield\nOld frame color metafield: {old_frame_color}\nNew frame color metafield: {new_frame_color}')
                 else:
-                    json_metafield = {"namespace": "italian", "key": "colore_della_montatura", "value": str(product.frame_color).strip(), "value_type": "string"}
+                    json_metafield = {"namespace": "italian", "key": "colore_della_montatura", "value": str(product.frame_color).strip(), "type": "single_line_text_field"}
                     shopify_processor.set_metafields_for_product(product.shopify_id, json_metafield)
             if str(product.metafields.frame_material).strip():
                 metafield_found_status, metafield_id, shopify_metafield__frame_material = self.get_matched_metafiled(shopify_italian_metafields, 'materiale_della_montatura')
@@ -969,7 +970,7 @@ class Keringeyewear_Shopify:
                         if not shopify_processor.update_frame_material_metafield(metafield_id, new_frame_material, new_product_title):
                             print(f'Failed to update product frame material metafield\nOld frame material metafield: {old_frame_material}\nNew frame material metafield: {new_frame_material}')
                 else:
-                    json_metafield = {"namespace": "italian", "key": "materiale_della_montatura", "value": str(product.metafields.frame_material).strip(), "value_type": "string"}
+                    json_metafield = {"namespace": "italian", "key": "materiale_della_montatura", "value": str(product.metafields.frame_material).strip(), "type": "single_line_text_field"}
                     shopify_processor.set_metafields_for_product(product.shopify_id, json_metafield)
             if str(product.metafields.frame_shape).strip():
                 metafield_found_status, metafield_id, shopify_metafield__frame_shape = self.get_matched_metafiled(shopify_italian_metafields, 'forma')
@@ -980,7 +981,7 @@ class Keringeyewear_Shopify:
                         if not shopify_processor.update_frame_shape_metafield(metafield_id, new_frame_shape, new_product_title):
                             print(f'Failed to update product frame shape metafield\nOld frame shape metafield: {old_frame_shape}\nNew frame_shape metafield: {new_frame_shape}')
                 else:
-                    json_metafield = {"namespace": "italian", "key": "forma", "value": str(product.metafields.frame_shape).strip(), "value_type": "string"}
+                    json_metafield = {"namespace": "italian", "key": "forma", "value": str(product.metafields.frame_shape).strip(), "type": "single_line_text_field"}
                     shopify_processor.set_metafields_for_product(product.shopify_id, json_metafield)
             if str(product.lens_color).strip():
                 metafield_found_status, metafield_id, shopify_metafield__lens_color = self.get_matched_metafiled(shopify_italian_metafields, 'colore_della_lente')
@@ -991,7 +992,7 @@ class Keringeyewear_Shopify:
                         if not shopify_processor.update_lens_color_metafield(metafield_id, new_lens_color, new_product_title):
                             print(f'Failed to update product lens color metafield\nOld lens color metafield: {old_lens_color}\nNew lens color metafield: {new_lens_color}')
                 else:
-                    json_metafield = {"namespace": "italian", "key": "colore_della_lente", "value": str(product.lens_color).strip(), "value_type": "string"}
+                    json_metafield = {"namespace": "italian", "key": "colore_della_lente", "value": str(product.lens_color).strip(), "type": "single_line_text_field"}
                     shopify_processor.set_metafields_for_product(product.shopify_id, json_metafield)
             if str(product.metafields.lens_technology).strip():
                 metafield_found_status, metafield_id, shopify_metafield__lens_technology = self.get_matched_metafiled(shopify_italian_metafields, 'tecnologia_della_lente')
@@ -1002,7 +1003,7 @@ class Keringeyewear_Shopify:
                         if not shopify_processor.update_lens_technology_metafield(metafield_id, new_lens_technology, new_product_title):
                             print(f'Failed to update product lens technology metafield\nOld lens technology metafield: {old_lens_technology}\nNew lens technology metafield: {new_lens_technology}')
                 else:
-                    json_metafield = {"namespace": "italian", "key": "tecnologia_della_lente", "value": str(product.metafields.lens_technology).strip(), "value_type": "string"}
+                    json_metafield = {"namespace": "italian", "key": "tecnologia_della_lente", "value": str(product.metafields.lens_technology).strip(), "type": "single_line_text_field"}
                     shopify_processor.set_metafields_for_product(product.shopify_id, json_metafield)
             if str(product.metafields.lens_material).strip():
                 metafield_found_status, metafield_id, shopify_metafield__lens_material = self.get_matched_metafiled(shopify_italian_metafields, 'materiale_della_lente')
@@ -1013,7 +1014,7 @@ class Keringeyewear_Shopify:
                         if not shopify_processor.update_lens_material_metafield(metafield_id, new_lens_material, new_product_title):
                             print(f'Failed to update product lens material metafield\nOld lens material metafield: {old_lens_material}\nNew lens material metafield: {new_lens_material}')
                 else:
-                    json_metafield = {"namespace": "italian", "key": "materiale_della_lente", "value": str(product.metafields.lens_material).strip(), "value_type": "string"}
+                    json_metafield = {"namespace": "italian", "key": "materiale_della_lente", "value": str(product.metafields.lens_material).strip(), "type": "single_line_text_field"}
                     shopify_processor.set_metafields_for_product(product.shopify_id, json_metafield)
             if str(product.metafields.product_size).strip():
                 metafield_found_status, metafield_id, shopify_metafield__product_size = self.get_matched_metafiled(shopify_italian_metafields, 'calibro_ponte_asta')
@@ -1024,7 +1025,7 @@ class Keringeyewear_Shopify:
                         if not shopify_processor.update_gtin1_metafield(metafield_id, new_product_size, new_product_title):
                             print(f'Failed to update product product size metafield\nOld product size metafield: {old_product_size}\nNew product size metafield: {new_product_size}')
                 else:
-                    json_metafield = {"namespace": "italian", "key": "calibro_ponte_asta", "value": str(product.metafields.product_size).strip(), "value_type": "string"}
+                    json_metafield = {"namespace": "italian", "key": "calibro_ponte_asta", "value": str(product.metafields.product_size).strip(), "type": "single_line_text_field"}
                     shopify_processor.set_metafields_for_product(product.shopify_id, json_metafield)
             # if str(product.metafields.activity).strip():
             #     metafield_found_status, metafield_id, shopify_metafield__activity = self.get_matched_metafiled(shopify_italian_metafields, 'attivita')
@@ -1035,7 +1036,7 @@ class Keringeyewear_Shopify:
             #             if not shopify_processor.update_activity_metafield(metafield_id, new_activity, new_product_title):
             #                 print(f'Failed to update product activity\nOld activity metafield: {old_activity}\nNew activity metafield: {new_activity}')
             #     else:
-            #         json_metafield = {"namespace": "italian", "key": "attivita", "value": str(product.metafields.activity).strip(), "value_type": "string"}
+            #         json_metafield = {"namespace": "italian", "key": "attivita", "value": str(product.metafields.activity).strip(), "type": "single_line_text_field"}
             #         shopify_processor.set_metafields_for_product(product.shopify_id, json_metafield)
             
         except Exception as e:
@@ -1047,20 +1048,20 @@ class Keringeyewear_Shopify:
     def add_product_metafeilds(self, product: Product, shopify_processor: Shopify_Processor) -> None:
         metafields = []
         try:
-            if str(product.metafields.for_who).strip(): metafields.append({"namespace": "my_fields", "key": "for_who", "value": str(product.metafields.for_who).strip(), "value_type": "string"})
-            if str(product.frame_color).strip(): metafields.append({'namespace': 'my_fields', 'key': 'frame_color', "value": str(product.frame_color).strip(), "value_type": "string"})
-            if str(product.metafields.frame_material).strip(): metafields.append({'namespace': 'my_fields', 'key': 'frame_material', "value": str(product.metafields.frame_material).strip(), "value_type": "string"})
-            if str(product.metafields.frame_shape).strip(): metafields.append({'namespace': 'my_fields', 'key': 'frame_shape', "value": str(product.metafields.frame_shape).strip(), "value_type": "string"})
-            if str(product.lens_color).strip(): metafields.append({'namespace': 'my_fields', 'key': 'lens_color', "value": str(product.lens_color).strip(), "value_type": "string"})
-            if str(product.metafields.lens_material).strip(): metafields.append({'namespace': 'my_fields', 'key': 'lens_material', "value": str(product.metafields.lens_material).strip(), "value_type": "string"})
-            if str(product.metafields.lens_technology).strip(): metafields.append({'namespace': 'my_fields', 'key': 'lens_technology', "value": str(product.metafields.lens_technology).strip(), "value_type": "string"})
-            if str(product.metafields.product_size).strip(): metafields.append({'namespace': 'my_fields', 'key': 'product_size', "value": str(product.metafields.product_size).strip(), "value_type": "string"})
-            if str(product.metafields.gtin1).strip(): metafields.append({'namespace': 'my_fields', 'key': 'gtin1', "value": str(product.metafields.gtin1).strip(), "value_type": "string"})
-            # if str(product.metafields.activity).strip(): metafields.append({'namespace': 'my_fields', 'key': 'activity', "value": str(product.metafields.activity).strip(), "value_type": "string"})
+            if str(product.metafields.for_who).strip(): metafields.append({"namespace": "my_fields", "key": "for_who", "value": str(product.metafields.for_who).strip(), "type": "single_line_text_field"})
+            if str(product.frame_color).strip(): metafields.append({'namespace': 'my_fields', 'key': 'frame_color', "value": str(product.frame_color).strip(), "type": "single_line_text_field"})
+            if str(product.metafields.frame_material).strip(): metafields.append({'namespace': 'my_fields', 'key': 'frame_material', "value": str(product.metafields.frame_material).strip(), "type": "single_line_text_field"})
+            if str(product.metafields.frame_shape).strip(): metafields.append({'namespace': 'my_fields', 'key': 'frame_shape', "value": str(product.metafields.frame_shape).strip(), "type": "single_line_text_field"})
+            if str(product.lens_color).strip(): metafields.append({'namespace': 'my_fields', 'key': 'lens_color', "value": str(product.lens_color).strip(), "type": "single_line_text_field"})
+            if str(product.metafields.lens_material).strip(): metafields.append({'namespace': 'my_fields', 'key': 'lens_material', "value": str(product.metafields.lens_material).strip(), "type": "single_line_text_field"})
+            if str(product.metafields.lens_technology).strip(): metafields.append({'namespace': 'my_fields', 'key': 'lens_technology', "value": str(product.metafields.lens_technology).strip(), "type": "single_line_text_field"})
+            if str(product.metafields.product_size).strip(): metafields.append({'namespace': 'my_fields', 'key': 'product_size', "value": str(product.metafields.product_size).strip(), "type": "single_line_text_field"})
+            if str(product.metafields.gtin1).strip(): metafields.append({'namespace': 'my_fields', 'key': 'gtin1', "value": str(product.metafields.gtin1).strip(), "type": "single_line_text_field"})
+            # if str(product.metafields.activity).strip(): metafields.append({'namespace': 'my_fields', 'key': 'activity', "value": str(product.metafields.activity).strip(), "type": "single_line_text_field"})
             
             for metafield in metafields: 
                 shopify_processor.set_metafields_for_product(product.shopify_id, metafield)
-        except Exception as e:
+        except Exception as e: 
             self.print_logs(f'Exception in add_product_metafeilds: {e}')
             if self.DEBUG: print(f'Exception in add_product_metafeilds: {e}')
             else: pass
@@ -1070,24 +1071,25 @@ class Keringeyewear_Shopify:
         metafields = []
         try:
             if str(product.metafields.for_who).strip(): 
-                metafields.append({"namespace": "italian", "key": "per_chi", "value": str(product.metafields.for_who).strip(), "value_type": "string"})
+                metafields.append({"namespace": "italian", "key": "per_chi", "value": str(product.metafields.for_who).strip(), "type": "single_line_text_field"})
             if str(product.frame_color).strip(): 
-                metafields.append({'namespace': 'italian', 'key': 'colore_della_montatura', "value": str(product.frame_color).strip(), "value_type": "string"})
+                metafields.append({'namespace': 'italian', 'key': 'colore_della_montatura', "value": str(product.frame_color).strip(), "type": "single_line_text_field"})
             if str(product.metafields.frame_material).strip(): 
-                metafields.append({'namespace': 'italian', 'key': 'materiale_della_montatura', "value": str(product.metafields.frame_material).strip(), "value_type": "string"})
+                metafields.append({'namespace': 'italian', 'key': 'materiale_della_montatura', "value": str(product.metafields.frame_material).strip(), "type": "single_line_text_field"})
             if str(product.metafields.frame_shape).strip(): 
-                metafields.append({'namespace': 'italian', 'key': 'forma', "value": str(product.metafields.frame_shape).strip(), "value_type": "string"})
+                metafields.append({'namespace': 'italian', 'key': 'forma', "value": str(product.metafields.frame_shape).strip(), "type": "single_line_text_field"})
             if str(product.lens_color).strip(): 
-                metafields.append({'namespace': 'italian', 'key': 'colore_della_lente', "value": str(product.lens_color).strip(), "value_type": "string"})
+                metafields.append({'namespace': 'italian', 'key': 'colore_della_lente', "value": str(product.lens_color).strip(), "type": "single_line_text_field"})
             if str(product.metafields.lens_material).strip(): 
-                metafields.append({'namespace': 'italian', 'key': 'materiale_della_lente', "value": str(product.metafields.lens_material).strip(), "value_type": "string"})
+                metafields.append({'namespace': 'italian', 'key': 'materiale_della_lente', "value": str(product.metafields.lens_material).strip(), "type": "single_line_text_field"})
             if str(product.metafields.lens_technology).strip(): 
-                metafields.append({'namespace': 'italian', 'key': 'tecnologia_della_lente', "value": str(product.metafields.lens_technology).strip(), "value_type": "string"})
+                metafields.append({'namespace': 'italian', 'key': 'tecnologia_della_lente', "value": str(product.metafields.lens_technology).strip(), "type": "single_line_text_field"})
             if str(product.metafields.product_size).strip(): 
-                metafields.append({'namespace': 'italian', 'key': 'calibro_ponte_asta', "value": str(product.metafields.product_size).strip(), "value_type": "string"})
+                metafields.append({'namespace': 'italian', 'key': 'calibro_ponte_asta', "value": str(product.metafields.product_size).strip(), "type": "single_line_text_field"})
             # if str(product.metafields.activity).strip(): 
-            #     metafields.append({'namespace': 'italian', 'key': 'attivita', "value": str(product.metafields.activity).strip(), "value_type": "string"})
-        
+            #     metafields.append({'namespace': 'italian', 'key': 'attivita', "value": str(product.metafields.activity).strip(), "type": "single_line_text_field"})
+
+            print(metafields)
             for metafield in metafields: 
                 shopify_processor.set_metafields_for_product(product.shopify_id, metafield)
         except Exception as e:

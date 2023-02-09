@@ -94,7 +94,6 @@ class Luxottica_Scraper:
                                                 scraped_products += 1
                                                 url = str(product_div.find_element(By.CSS_SELECTOR, 'a[class^="Tile__ImageContainer"]').get_attribute('href'))
                                                 identifier = str(url).split('/')[-1].strip()
-
                                                 if not cookies: cookies = self.get_cookies_from_browser(identifier)
 
                                                 headers = self.get_headers(cookies, url, dtPC)
@@ -728,7 +727,8 @@ class Luxottica_Scraper:
             metafields.product_size = ', '.join(product_sizes)
             metafields.gtin1 = ', '.join(barcodes)
 
-            for image360 in self.get_360_images(tokenValue, headers):
+
+            for image360 in self.get_360_images(varinat['uniqueID'], headers):
                 if image360 not in metafields.img_360_urls:
                     metafields.img_360_urls = image360
             
@@ -763,8 +763,10 @@ class Luxottica_Scraper:
             response = requests.get(url=url, headers=headers)
             if response.status_code == 200:
                 json_data = json.loads(response.text)
-                id = str(int(json_data['data']['contents'][0]['id']))
-                tokenValue = json_data['data']['contents'][0]['tokenValue']
+                if 'contents' in json_data['data']:
+                    id = str(int(json_data['data']['contents'][0]['id']))
+                    tokenValue = json_data['data']['contents'][0]['tokenValue']
+                else: print(json_data['data'], identifier)
             else: print(f'Status code: {response.status_code} for id and tokenValue {response.text} {response.headers}')
         except Exception as e:
             if self.DEBUG: print(f'Exception in get_tokenValue: {e}')
@@ -940,8 +942,12 @@ class Luxottica_Scraper:
                 response = requests.get(url=url, headers= headers)
                 if response.status_code == 200:
                     json_data = json.loads(response.text)
-                    for attachment in json_data['data']['catalogEntryView'][0]['attachments']:
-                        image_360_urls.append(attachment['attachmentAssetPath'])
+                    if 'attachments' in json_data['data']['catalogEntryView'][0]:
+                        for attachment in json_data['data']['catalogEntryView'][0]['attachments']:
+                            image_360_url = str(attachment['attachmentAssetPath']).strip()
+                            # if '?impolicy=MYL_EYE&wid=688' not in image_360_url:
+                            #     image_360_url = f'{image_360_url}?impolicy=MYL_EYE&wid=688'
+                            image_360_urls.append(image_360_url)
                     break
                 if counter == 3: break
         except Exception as e:

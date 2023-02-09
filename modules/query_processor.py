@@ -595,7 +595,7 @@ class Query_Processor:
                 metafield.gtin1 = metafield_data['gtin1']
                 metafield.img_url = metafield_data['img_url']
                 for img_360 in str(metafield_data['img_360_urls']).strip().split(','):
-                    metafield.img_360_urls = img_360
+                    if str(img_360).strip(): metafield.img_360_urls = str(img_360).strip()
                 metafields.append(metafield)
             if cursor: cursor.close()
             if db: db.commit()

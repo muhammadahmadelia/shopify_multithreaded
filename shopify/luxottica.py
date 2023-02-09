@@ -1,6 +1,7 @@
 import os
 import base64
-
+import requests
+from time import sleep
 from models.brand import Brand
 from models.product import Product
 from models.variant import Variant
@@ -43,7 +44,7 @@ class Luxottica_Shopify:
                         
                         
                         if shopify_product and 'Outlet' not in shopify_product['tags']:
-                            # if self.DEBUG: print(new_product_title)
+                            if self.DEBUG: print(new_product_title)
 
                             self.check_product_title(new_product_title, product, shopify_product, shopify_processor)
                             self.check_product_description(brand, product, shopify_product, shopify_processor)
@@ -77,15 +78,16 @@ class Luxottica_Shopify:
                                 self.add_product_metafeilds(product, shopify_processor)
 
                             shopify_italian_metafields = shopify_processor.get_product_italian_metafields_from_shopify(product.shopify_id)
+                            
                             if shopify_italian_metafields:
                                 self.check_product_italian_metafields(new_product_title, product, shopify_metafields, shopify_processor)
                             else:
                                 self.add_product_italian_metafeilds(product, shopify_processor)
 
                             for variant in product.variants:
-                                if variant.shopify_id: self.check_product_variant(new_product_title, variant, product, shopify_product, shopify_processor)
-                                else: 
-                                    self.add_new_variant(variant, product, new_product_title, shopify_processor)
+                                if  not variant.shopify_id: self.add_new_variant(variant, product, new_product_title, shopify_processor)
+                                else: self.check_product_variant(new_product_title, variant, product, shopify_product, shopify_processor)
+                                    
                             
                         else: 
                             if shopify_product: 
@@ -655,18 +657,32 @@ class Luxottica_Shopify:
             # first download all the images
             
             for index, image_360_url in enumerate(product.metafields.img_360_urls):
-                if '.jpg' in image_360_url: image_360_url.replace('.jpg', '.png')
-                image_filename = image_360_url.split('/')[-1].strip()
-    
-                if '?' in image_filename: image_filename = str(image_filename).split('?')[0].strip()
-                if image_filename[0] == '0': image_filename = image_filename[1:]
+                image_360_url = str(image_360_url).strip()
+                # if '.jpg' in image_360_url: image_360_url.replace('.jpg', '.png')
+                image_filename = ''
 
-                
                 if '?impolicy=MYL_EYE&wid=688' not in image_360_url:
-                    image_360_url = f'{image_360_url.split("?impolicy=")[0]}?impolicy=MYL_EYE&wid=688'
-                
-                image_attachment = shopify_processor.download_image(image_360_url)
+                    image_360_url = str(image_360_url).replace('?impolicy=MYL_EYE&wid=688', '').strip()
 
+                try:
+                    image_filename = image_360_url.split('/')[-1].strip()
+    
+                    if '?' in image_filename: image_filename = str(image_filename).split('?')[0].strip()
+                    if image_filename[0] == '0': image_filename = image_filename[1:]
+
+                    
+                    # if '?impolicy=MYL_EYE&wid=688' not in image_360_url:
+                    #     image_360_url = f'{image_360_url}?impolicy=MYL_EYE&wid=688'
+                except Exception as e:
+                    self.print_logs(f'Exception in add_product_360_images image_filename: {e}')
+                    if self.DEBUG: print(f'Exception in add_product_360_images image_filename: {e}')
+                    print(image_360_url)
+                    image_filename = str(new_product_title).strip().replace(' ', '_')
+                    if '.jpg' in image_360_url: image_filename = f'{image_filename}__{index + 1}.jpg'
+                    else: image_filename = f'{image_filename}__{index + 1}.png'
+
+
+                image_attachment = self.download_image(image_360_url)
 
                 if image_attachment:
                     
@@ -702,6 +718,29 @@ class Luxottica_Shopify:
             self.print_logs(f'Excepption in add_product_360_images: {e}')
             if self.DEBUG: print(f'Excepption in add_product_360_images: {e}')
             else: pass
+
+    # this function will download image from the given url
+    def download_image(self, url: str):
+        image_attachment = ''
+        try:
+            
+            for _ in range(0, 10):
+                try:
+                    response = requests.get(url=url)
+                    if response.status_code == 200:
+                        image_attachment = response.content
+                        break
+                    elif response.status_code == 404: 
+                        self.print_logs(f'404 in downloading this image {url}')
+                        break
+                    else: 
+                        self.print_logs(f'{response.status_code} found for downloading image')
+                        sleep(1)
+                except: pass
+        except Exception as e:
+            if self.DEBUG: print(f'Exception in download_image: {str(e)}')
+            self.print_logs(f'Exception in download_image: {str(e)}')
+        finally: return image_attachment
 
     # check image 360 tag on the shopify product and if not found add it
     def check_product_360_images_tag(self, product: Product, shopify_product: dict, shopify_processor: Shopify_Processor) -> None:
@@ -837,7 +876,7 @@ class Luxottica_Shopify:
                         if not shopify_processor.update_for_who_metafield(metafield_id, new_for_who, new_product_title):
                             print(f'Failed to update product gender metafield\nOld gender metafield: {old_for_who}\nNew gender metafield: {new_for_who}')
                 else:
-                    json_metafield = {"namespace": "my_fields", "key": "for_who", "value": str(product.metafields.for_who).strip(), "value_type": "string"}
+                    json_metafield = {"namespace": "my_fields", "key": "for_who", "value": str(product.metafields.for_who).strip(), "type": "single_line_text_field"}
                     shopify_processor.set_metafields_for_product(product.shopify_id, json_metafield)
             if str(product.frame_color).strip():
                 metafield_found_status, metafield_id, shopify_metafield__frame_color = self.get_matched_metafiled(shopify_metafields, 'frame_color')
@@ -848,7 +887,7 @@ class Luxottica_Shopify:
                         if not shopify_processor.update_frame_color_metafield(metafield_id, new_frame_color, new_product_title):
                             print(f'Failed to update product frame color metafield\nOld frame color metafield: {old_frame_color}\nNew frame color metafield: {new_frame_color}')
                 else:
-                    json_metafield = {"namespace": "my_fields", "key": "frame_color", "value": str(product.frame_color).strip(), "value_type": "string"}
+                    json_metafield = {"namespace": "my_fields", "key": "frame_color", "value": str(product.frame_color).strip(), "type": "single_line_text_field"}
                     shopify_processor.set_metafields_for_product(product.shopify_id, json_metafield)
             if str(product.metafields.frame_material).strip():
                 metafield_found_status, metafield_id, shopify_metafield__frame_material = self.get_matched_metafiled(shopify_metafields, 'frame_material')
@@ -859,7 +898,7 @@ class Luxottica_Shopify:
                         if not shopify_processor.update_frame_material_metafield(metafield_id, new_frame_material, new_product_title):
                             print(f'Failed to update product frame material metafield\nOld frame material metafield: {old_frame_material}\nNew frame material metafield: {new_frame_material}')
                 else:
-                    json_metafield = {"namespace": "my_fields", "key": "frame_material", "value": str(product.metafields.frame_material).strip(), "value_type": "string"}
+                    json_metafield = {"namespace": "my_fields", "key": "frame_material", "value": str(product.metafields.frame_material).strip(), "type": "single_line_text_field"}
                     shopify_processor.set_metafields_for_product(product.shopify_id, json_metafield)
             if str(product.metafields.frame_shape).strip():
                 metafield_found_status, metafield_id, shopify_metafield__frame_shape = self.get_matched_metafiled(shopify_metafields, 'frame_shape')
@@ -870,7 +909,7 @@ class Luxottica_Shopify:
                         if not shopify_processor.update_frame_shape_metafield(metafield_id, new_frame_shape, new_product_title):
                             print(f'Failed to update product frame shape metafield\nOld frame shape metafield: {old_frame_shape}\nNew frame_shape metafield: {new_frame_shape}')
                 else:
-                    json_metafield = {"namespace": "my_fields", "key": "frame_shape", "value": str(product.metafields.frame_shape).strip(), "value_type": "string"}
+                    json_metafield = {"namespace": "my_fields", "key": "frame_shape", "value": str(product.metafields.frame_shape).strip(), "type": "single_line_text_field"}
                     shopify_processor.set_metafields_for_product(product.shopify_id, json_metafield)
             if str(product.lens_color).strip():
                 metafield_found_status, metafield_id, shopify_metafield__lens_color = self.get_matched_metafiled(shopify_metafields, 'lens_color')
@@ -881,7 +920,7 @@ class Luxottica_Shopify:
                         if not shopify_processor.update_lens_color_metafield(metafield_id, new_lens_color, new_product_title):
                             print(f'Failed to update product lens color metafield\nOld lens color metafield: {old_lens_color}\nNew lens color metafield: {new_lens_color}')
                 else:
-                    json_metafield = {"namespace": "my_fields", "key": "lens_color", "value": str(product.lens_color).strip(), "value_type": "string"}
+                    json_metafield = {"namespace": "my_fields", "key": "lens_color", "value": str(product.lens_color).strip(), "type": "single_line_text_field"}
                     shopify_processor.set_metafields_for_product(product.shopify_id, json_metafield)
             if str(product.metafields.lens_technology).strip():
                 metafield_found_status, metafield_id, shopify_metafield__lens_technology = self.get_matched_metafiled(shopify_metafields, 'lens_technology')
@@ -892,7 +931,7 @@ class Luxottica_Shopify:
                         if not shopify_processor.update_lens_technology_metafield(metafield_id, new_lens_technology, new_product_title):
                             print(f'Failed to update product lens technology metafield\nOld lens technology metafield: {old_lens_technology}\nNew lens technology metafield: {new_lens_technology}')
                 else:
-                    json_metafield = {"namespace": "my_fields", "key": "lens_technology", "value": str(product.metafields.lens_technology).strip(), "value_type": "string"}
+                    json_metafield = {"namespace": "my_fields", "key": "lens_technology", "value": str(product.metafields.lens_technology).strip(), "type": "single_line_text_field"}
                     shopify_processor.set_metafields_for_product(product.shopify_id, json_metafield)
             if str(product.metafields.lens_material).strip():
                 metafield_found_status, metafield_id, shopify_metafield__lens_material = self.get_matched_metafiled(shopify_metafields, 'lens_material')
@@ -903,7 +942,7 @@ class Luxottica_Shopify:
                         if not shopify_processor.update_lens_material_metafield(metafield_id, new_lens_material, new_product_title):
                             print(f'Failed to update product lens material metafield\nOld lens material metafield: {old_lens_material}\nNew lens material metafield: {new_lens_material}')
                 else:
-                    json_metafield = {"namespace": "my_fields", "key": "lens_material", "value": str(product.metafields.lens_material).strip(), "value_type": "string"}
+                    json_metafield = {"namespace": "my_fields", "key": "lens_material", "value": str(product.metafields.lens_material).strip(), "type": "single_line_text_field"}
                     shopify_processor.set_metafields_for_product(product.shopify_id, json_metafield)
             if str(product.metafields.product_size).strip():
                 metafield_found_status, metafield_id, shopify_metafield__product_size = self.get_matched_metafiled(shopify_metafields, 'product_size')
@@ -914,7 +953,7 @@ class Luxottica_Shopify:
                         if not shopify_processor.update_gtin1_metafield(metafield_id, new_product_size, new_product_title):
                             print(f'Failed to update product product size metafield\nOld product size metafield: {old_product_size}\nNew product size metafield: {new_product_size}')
                 else:
-                    json_metafield = {"namespace": "my_fields", "key": "product_size", "value": str(product.metafields.product_size).strip(), "value_type": "string"}
+                    json_metafield = {"namespace": "my_fields", "key": "product_size", "value": str(product.metafields.product_size).strip(), "type": "single_line_text_field"}
                     shopify_processor.set_metafields_for_product(product.shopify_id, json_metafield)
             if str(product.metafields.gtin1).strip():
                 metafield_found_status, metafield_id, shopify_metafield__gtin1 = self.get_matched_metafiled(shopify_metafields, 'gtin1')
@@ -925,7 +964,7 @@ class Luxottica_Shopify:
                         if not shopify_processor.update_gtin1_metafield(metafield_id, new_gtin1, new_product_title):
                             print(f'Failed to update product gtin metafield\nOld gtin metafield: {old_gtin1}\nNew gtin metafield: {new_gtin1}')
                 else:
-                    json_metafield = {"namespace": "my_fields", "key": "gtin1", "value": str(product.metafields.gtin1).strip(), "value_type": "string"}
+                    json_metafield = {"namespace": "my_fields", "key": "gtin1", "value": str(product.metafields.gtin1).strip(), "type": "single_line_text_field"}
                     shopify_processor.set_metafields_for_product(product.shopify_id, json_metafield)
             # if str(product.metafields.activity).strip():
             #     metafield_found_status, metafield_id, shopify_metafield__activity = self.get_matched_metafiled(shopify_metafields, 'activity')
@@ -936,7 +975,7 @@ class Luxottica_Shopify:
             #             if not shopify_processor.update_activity_metafield(metafield_id, new_activity, new_product_title):
             #                 print(f'Failed to update product activity\nOld activity metafield: {old_activity}\nNew activity metafield: {new_activity}')
             #     else:
-            #         json_metafield = {"namespace": "my_fields", "key": "activity", "value": str(product.metafields.activity).strip(), "value_type": "string"}
+            #         json_metafield = {"namespace": "my_fields", "key": "activity", "value": str(product.metafields.activity).strip(), "type": "single_line_text_field"}
             #         shopify_processor.set_metafields_for_product(product.shopify_id, json_metafield)
             if str(product.metafields.graduabile).strip():
                 metafield_found_status, metafield_id, shopify_metafield__graduabile = self.get_matched_metafiled(shopify_metafields, 'graduabile')
@@ -947,7 +986,7 @@ class Luxottica_Shopify:
                         if not shopify_processor.update_graduabile_metafield(metafield_id, new_graduabile, new_product_title):
                             print(f'Failed to update product graduabile metafield\nOld graduabile metafield: {old_graduabile}\nNew graduabile metafield: {new_graduabile}')
                 else:
-                    json_metafield = {"namespace": "my_fields", "key": "graduabile", "value": str(product.metafields.graduabile).strip(), "value_type": "string"}
+                    json_metafield = {"namespace": "my_fields", "key": "graduabile", "value": str(product.metafields.graduabile).strip(), "type": "single_line_text_field"}
                     shopify_processor.set_metafields_for_product(product.shopify_id, json_metafield)
             if str(product.metafields.interest).strip():
                 metafield_found_status, metafield_id, shopify_metafield__interest = self.get_matched_metafiled(shopify_metafields, 'interest')
@@ -958,7 +997,7 @@ class Luxottica_Shopify:
                         if not shopify_processor.update_interest_metafield(metafield_id, new_interest, new_product_title):
                             print(f'Failed to update product interest metafield\nOld interest metafield: {old_interest}\nNew interest metafield: {new_interest}')
                 else:
-                    json_metafield = {'namespace': 'my_fields', 'key': 'interest', "value": str(product.metafields.interest).strip(), "value_type": "string"}
+                    json_metafield = {'namespace': 'my_fields', 'key': 'interest', "value": str(product.metafields.interest).strip(), "type": "single_line_text_field"}
                     shopify_processor.set_metafields_for_product(product.shopify_id, json_metafield)
             if not self.DEBUG and str(title_tag).strip():
                 metafield_found_status, metafield_id, shopify_metafield__title_tag = self.get_matched_metafiled(shopify_metafields, 'title_tag')
@@ -969,7 +1008,7 @@ class Luxottica_Shopify:
                         if not shopify_processor.update_title_tag_metafield(metafield_id, new_title_tag, new_product_title):
                             print(f'Failed to update product meta title\nOld meta title: {old_title_tag}\nNew meta title: {new_title_tag}')
                 else:
-                    json_metafield = {'namespace': 'global', 'key': 'title_tag', "value": str(title_tag).strip(), "value_type": "string"}
+                    json_metafield = {'namespace': 'global', 'key': 'title_tag', "value": str(title_tag).strip(), "type": "single_line_text_field"}
                     shopify_processor.set_metafields_for_product(product.shopify_id, json_metafield)
             if not self.DEBUG and str(description_tag).strip():
                 metafield_found_status, metafield_id, shopify_metafield__description_tag = self.get_matched_metafiled(shopify_metafields, 'description_tag')
@@ -980,7 +1019,7 @@ class Luxottica_Shopify:
                         if not shopify_processor.update_description_tag_metafield(metafield_id, new_description_tag, new_product_title):
                             print(f'Failed to update product meta description\nOld meta description: {old_description_tag}\nNew meta description: {new_description_tag}')
                 else:
-                    json_metafield = {'namespace': 'global', 'key': 'description_tag', "value": str(description_tag).strip(), "value_type": "string"}
+                    json_metafield = {'namespace': 'global', 'key': 'description_tag', "value": str(description_tag).strip(), "type": "single_line_text_field"}
                     shopify_processor.set_metafields_for_product(product.shopify_id, json_metafield)
         
         except Exception as e: 
@@ -1001,7 +1040,7 @@ class Luxottica_Shopify:
                         if not shopify_processor.update_for_who_metafield(metafield_id, new_for_who, new_product_title):
                             print(f'Failed to update product gender metafield\nOld gender metafield: {old_for_who}\nNew gender metafield: {new_for_who}')
                 else:
-                    json_metafield = {"namespace": "italian", "key": "per_chi", "value": str(product.metafields.for_who).strip(), "value_type": "string"}
+                    json_metafield = {"namespace": "italian", "key": "per_chi", "value": str(product.metafields.for_who).strip(), "type": "single_line_text_field"}
                     shopify_processor.set_metafields_for_product(product.shopify_id, json_metafield)
             if str(product.frame_color).strip():
                 metafield_found_status, metafield_id, shopify_metafield__frame_color = self.get_matched_metafiled(shopify_italian_metafields, 'colore_della_montatura')
@@ -1012,7 +1051,7 @@ class Luxottica_Shopify:
                         if not shopify_processor.update_frame_color_metafield(metafield_id, new_frame_color, new_product_title):
                             print(f'Failed to update product frame color metafield\nOld frame color metafield: {old_frame_color}\nNew frame color metafield: {new_frame_color}')
                 else:
-                    json_metafield = {"namespace": "italian", "key": "colore_della_montatura", "value": str(product.frame_color).strip(), "value_type": "string"}
+                    json_metafield = {"namespace": "italian", "key": "colore_della_montatura", "value": str(product.frame_color).strip(), "type": "single_line_text_field"}
                     shopify_processor.set_metafields_for_product(product.shopify_id, json_metafield)
             if str(product.metafields.frame_material).strip():
                 metafield_found_status, metafield_id, shopify_metafield__frame_material = self.get_matched_metafiled(shopify_italian_metafields, 'materiale_della_montatura')
@@ -1023,7 +1062,7 @@ class Luxottica_Shopify:
                         if not shopify_processor.update_frame_material_metafield(metafield_id, new_frame_material, new_product_title):
                             print(f'Failed to update product frame material metafield\nOld frame material metafield: {old_frame_material}\nNew frame material metafield: {new_frame_material}')
                 else:
-                    json_metafield = {"namespace": "italian", "key": "materiale_della_montatura", "value": str(product.metafields.frame_material).strip(), "value_type": "string"}
+                    json_metafield = {"namespace": "italian", "key": "materiale_della_montatura", "value": str(product.metafields.frame_material).strip(), "type": "single_line_text_field"}
                     shopify_processor.set_metafields_for_product(product.shopify_id, json_metafield)
             if str(product.metafields.frame_shape).strip():
                 metafield_found_status, metafield_id, shopify_metafield__frame_shape = self.get_matched_metafiled(shopify_italian_metafields, 'forma')
@@ -1034,7 +1073,7 @@ class Luxottica_Shopify:
                         if not shopify_processor.update_frame_shape_metafield(metafield_id, new_frame_shape, new_product_title):
                             print(f'Failed to update product frame shape metafield\nOld frame shape metafield: {old_frame_shape}\nNew frame_shape metafield: {new_frame_shape}')
                 else:
-                    json_metafield = {"namespace": "italian", "key": "forma", "value": str(product.metafields.frame_shape).strip(), "value_type": "string"}
+                    json_metafield = {"namespace": "italian", "key": "forma", "value": str(product.metafields.frame_shape).strip(), "type": "single_line_text_field"}
                     shopify_processor.set_metafields_for_product(product.shopify_id, json_metafield)
             if str(product.lens_color).strip():
                 metafield_found_status, metafield_id, shopify_metafield__lens_color = self.get_matched_metafiled(shopify_italian_metafields, 'colore_della_lente')
@@ -1045,7 +1084,7 @@ class Luxottica_Shopify:
                         if not shopify_processor.update_lens_color_metafield(metafield_id, new_lens_color, new_product_title):
                             print(f'Failed to update product lens color metafield\nOld lens color metafield: {old_lens_color}\nNew lens color metafield: {new_lens_color}')
                 else:
-                    json_metafield = {"namespace": "italian", "key": "colore_della_lente", "value": str(product.lens_color).strip(), "value_type": "string"}
+                    json_metafield = {"namespace": "italian", "key": "colore_della_lente", "value": str(product.lens_color).strip(), "type": "single_line_text_field"}
                     shopify_processor.set_metafields_for_product(product.shopify_id, json_metafield)
             if str(product.metafields.lens_technology).strip():
                 metafield_found_status, metafield_id, shopify_metafield__lens_technology = self.get_matched_metafiled(shopify_italian_metafields, 'tecnologia_della_lente')
@@ -1056,7 +1095,7 @@ class Luxottica_Shopify:
                         if not shopify_processor.update_lens_technology_metafield(metafield_id, new_lens_technology, new_product_title):
                             print(f'Failed to update product lens technology metafield\nOld lens technology metafield: {old_lens_technology}\nNew lens technology metafield: {new_lens_technology}')
                 else:
-                    json_metafield = {"namespace": "italian", "key": "tecnologia_della_lente", "value": str(product.metafields.lens_technology).strip(), "value_type": "string"}
+                    json_metafield = {"namespace": "italian", "key": "tecnologia_della_lente", "value": str(product.metafields.lens_technology).strip(), "type": "single_line_text_field"}
                     shopify_processor.set_metafields_for_product(product.shopify_id, json_metafield)
             if str(product.metafields.lens_material).strip():
                 metafield_found_status, metafield_id, shopify_metafield__lens_material = self.get_matched_metafiled(shopify_italian_metafields, 'materiale_della_lente')
@@ -1067,7 +1106,7 @@ class Luxottica_Shopify:
                         if not shopify_processor.update_lens_material_metafield(metafield_id, new_lens_material, new_product_title):
                             print(f'Failed to update product lens material metafield\nOld lens material metafield: {old_lens_material}\nNew lens material metafield: {new_lens_material}')
                 else:
-                    json_metafield = {"namespace": "italian", "key": "materiale_della_lente", "value": str(product.metafields.lens_material).strip(), "value_type": "string"}
+                    json_metafield = {"namespace": "italian", "key": "materiale_della_lente", "value": str(product.metafields.lens_material).strip(), "type": "single_line_text_field"}
                     shopify_processor.set_metafields_for_product(product.shopify_id, json_metafield)
             if str(product.metafields.product_size).strip():
                 metafield_found_status, metafield_id, shopify_metafield__product_size = self.get_matched_metafiled(shopify_italian_metafields, 'calibro_ponte_asta')
@@ -1078,7 +1117,7 @@ class Luxottica_Shopify:
                         if not shopify_processor.update_gtin1_metafield(metafield_id, new_product_size, new_product_title):
                             print(f'Failed to update product product size metafield\nOld product size metafield: {old_product_size}\nNew product size metafield: {new_product_size}')
                 else:
-                    json_metafield = {"namespace": "italian", "key": "calibro_ponte_asta", "value": str(product.metafields.product_size).strip(), "value_type": "string"}
+                    json_metafield = {"namespace": "italian", "key": "calibro_ponte_asta", "value": str(product.metafields.product_size).strip(), "type": "single_line_text_field"}
                     shopify_processor.set_metafields_for_product(product.shopify_id, json_metafield)
             # if str(product.metafields.activity).strip():
             #     metafield_found_status, metafield_id, shopify_metafield__activity = self.get_matched_metafiled(shopify_italian_metafields, 'attivita')
@@ -1089,7 +1128,7 @@ class Luxottica_Shopify:
             #             if not shopify_processor.update_activity_metafield(metafield_id, new_activity, new_product_title):
             #                 print(f'Failed to update product activity\nOld activity metafield: {old_activity}\nNew activity metafield: {new_activity}')
             #     else:
-            #         json_metafield = {"namespace": "italian", "key": "attivita", "value": str(product.metafields.activity).strip(), "value_type": "string"}
+            #         json_metafield = {"namespace": "italian", "key": "attivita", "value": str(product.metafields.activity).strip(), "type": "single_line_text_field"}
             #         shopify_processor.set_metafields_for_product(product.shopify_id, json_metafield)
             
         except Exception as e:
@@ -1101,16 +1140,16 @@ class Luxottica_Shopify:
     def add_product_metafeilds(self, product: Product, shopify_processor: Shopify_Processor) -> None:
         metafields = []
         try:
-            if str(product.metafields.for_who).strip(): metafields.append({"namespace": "my_fields", "key": "for_who", "value": str(product.metafields.for_who).strip(), "value_type": "string"})
-            if str(product.frame_color).strip(): metafields.append({'namespace': 'my_fields', 'key': 'frame_color', "value": str(product.frame_color).strip(), "value_type": "string"})
-            if str(product.metafields.frame_material).strip(): metafields.append({'namespace': 'my_fields', 'key': 'frame_material', "value": str(product.metafields.frame_material).strip(), "value_type": "string"})
-            if str(product.metafields.frame_shape).strip(): metafields.append({'namespace': 'my_fields', 'key': 'frame_shape', "value": str(product.metafields.frame_shape).strip(), "value_type": "string"})
-            if str(product.lens_color).strip(): metafields.append({'namespace': 'my_fields', 'key': 'lens_color', "value": str(product.lens_color).strip(), "value_type": "string"})
-            if str(product.metafields.lens_material).strip(): metafields.append({'namespace': 'my_fields', 'key': 'lens_material', "value": str(product.metafields.lens_material).strip(), "value_type": "string"})
-            if str(product.metafields.lens_technology).strip(): metafields.append({'namespace': 'my_fields', 'key': 'lens_technology', "value": str(product.metafields.lens_technology).strip(), "value_type": "string"})
-            if str(product.metafields.product_size).strip(): metafields.append({'namespace': 'my_fields', 'key': 'product_size', "value": str(product.metafields.product_size).strip(), "value_type": "string"})
-            if str(product.metafields.gtin1).strip(): metafields.append({'namespace': 'my_fields', 'key': 'gtin1', "value": str(product.metafields.gtin1).strip(), "value_type": "string"})
-            # if str(product.metafields.activity).strip(): metafields.append({'namespace': 'my_fields', 'key': 'activity', "value": str(product.metafields.activity).strip(), "value_type": "string"})
+            if str(product.metafields.for_who).strip(): metafields.append({"namespace": "my_fields", "key": "for_who", "value": str(product.metafields.for_who).strip(), "type": "single_line_text_field"})
+            if str(product.frame_color).strip(): metafields.append({'namespace': 'my_fields', 'key': 'frame_color', "value": str(product.frame_color).strip(), "type": "single_line_text_field"})
+            if str(product.metafields.frame_material).strip(): metafields.append({'namespace': 'my_fields', 'key': 'frame_material', "value": str(product.metafields.frame_material).strip(), "type": "single_line_text_field"})
+            if str(product.metafields.frame_shape).strip(): metafields.append({'namespace': 'my_fields', 'key': 'frame_shape', "value": str(product.metafields.frame_shape).strip(), "type": "single_line_text_field"})
+            if str(product.lens_color).strip(): metafields.append({'namespace': 'my_fields', 'key': 'lens_color', "value": str(product.lens_color).strip(), "type": "single_line_text_field"})
+            if str(product.metafields.lens_material).strip(): metafields.append({'namespace': 'my_fields', 'key': 'lens_material', "value": str(product.metafields.lens_material).strip(), "type": "single_line_text_field"})
+            if str(product.metafields.lens_technology).strip(): metafields.append({'namespace': 'my_fields', 'key': 'lens_technology', "value": str(product.metafields.lens_technology).strip(), "type": "single_line_text_field"})
+            if str(product.metafields.product_size).strip(): metafields.append({'namespace': 'my_fields', 'key': 'product_size', "value": str(product.metafields.product_size).strip(), "type": "single_line_text_field"})
+            if str(product.metafields.gtin1).strip(): metafields.append({'namespace': 'my_fields', 'key': 'gtin1', "value": str(product.metafields.gtin1).strip(), "type": "single_line_text_field"})
+            # if str(product.metafields.activity).strip(): metafields.append({'namespace': 'my_fields', 'key': 'activity', "value": str(product.metafields.activity).strip(), "type": "single_line_text_field"})
             
             for metafield in metafields: 
                 shopify_processor.set_metafields_for_product(product.shopify_id, metafield)
@@ -1124,24 +1163,25 @@ class Luxottica_Shopify:
         metafields = []
         try:
             if str(product.metafields.for_who).strip(): 
-                metafields.append({"namespace": "italian", "key": "per_chi", "value": str(product.metafields.for_who).strip(), "value_type": "string"})
+                metafields.append({"namespace": "italian", "key": "per_chi", "value": str(product.metafields.for_who).strip(), "type": "single_line_text_field"})
             if str(product.frame_color).strip(): 
-                metafields.append({'namespace': 'italian', 'key': 'colore_della_montatura', "value": str(product.frame_color).strip(), "value_type": "string"})
+                metafields.append({'namespace': 'italian', 'key': 'colore_della_montatura', "value": str(product.frame_color).strip(), "type": "single_line_text_field"})
             if str(product.metafields.frame_material).strip(): 
-                metafields.append({'namespace': 'italian', 'key': 'materiale_della_montatura', "value": str(product.metafields.frame_material).strip(), "value_type": "string"})
+                metafields.append({'namespace': 'italian', 'key': 'materiale_della_montatura', "value": str(product.metafields.frame_material).strip(), "type": "single_line_text_field"})
             if str(product.metafields.frame_shape).strip(): 
-                metafields.append({'namespace': 'italian', 'key': 'forma', "value": str(product.metafields.frame_shape).strip(), "value_type": "string"})
+                metafields.append({'namespace': 'italian', 'key': 'forma', "value": str(product.metafields.frame_shape).strip(), "type": "single_line_text_field"})
             if str(product.lens_color).strip(): 
-                metafields.append({'namespace': 'italian', 'key': 'colore_della_lente', "value": str(product.lens_color).strip(), "value_type": "string"})
+                metafields.append({'namespace': 'italian', 'key': 'colore_della_lente', "value": str(product.lens_color).strip(), "type": "single_line_text_field"})
             if str(product.metafields.lens_material).strip(): 
-                metafields.append({'namespace': 'italian', 'key': 'materiale_della_lente', "value": str(product.metafields.lens_material).strip(), "value_type": "string"})
+                metafields.append({'namespace': 'italian', 'key': 'materiale_della_lente', "value": str(product.metafields.lens_material).strip(), "type": "single_line_text_field"})
             if str(product.metafields.lens_technology).strip(): 
-                metafields.append({'namespace': 'italian', 'key': 'tecnologia_della_lente', "value": str(product.metafields.lens_technology).strip(), "value_type": "string"})
+                metafields.append({'namespace': 'italian', 'key': 'tecnologia_della_lente', "value": str(product.metafields.lens_technology).strip(), "type": "single_line_text_field"})
             if str(product.metafields.product_size).strip(): 
-                metafields.append({'namespace': 'italian', 'key': 'calibro_ponte_asta', "value": str(product.metafields.product_size).strip(), "value_type": "string"})
+                metafields.append({'namespace': 'italian', 'key': 'calibro_ponte_asta', "value": str(product.metafields.product_size).strip(), "type": "single_line_text_field"})
             # if str(product.metafields.activity).strip(): 
-            #     metafields.append({'namespace': 'italian', 'key': 'attivita', "value": str(product.metafields.activity).strip(), "value_type": "string"})
-        
+            #     metafields.append({'namespace': 'italian', 'key': 'attivita', "value": str(product.metafields.activity).strip(), "type": "single_line_text_field"})
+
+            print(metafields)
             for metafield in metafields: 
                 shopify_processor.set_metafields_for_product(product.shopify_id, metafield)
         except Exception as e:
@@ -1156,11 +1196,14 @@ class Luxottica_Shopify:
             if matched_index != -1:
                 if str(variant.title).strip():
                     if len(product.variants) == 1:
-                        if 'Default Title' != shopify_product['variants'][matched_index]['title']:
+                        if 'Default Title' != str(shopify_product['variants'][matched_index]['title']).strip():
                             if not shopify_processor.update_variant_title(variant.shopify_id, 'Default Title', new_product_title):
                                 print(f'Failed to update variant title of product: {new_product_title}')
                     else:    
-                        if variant.title != shopify_product['variants'][matched_index]['title']:
+                        if str(variant.title).strip() != str(shopify_product['variants'][matched_index]['title']).strip():
+                            # print(matched_index, str(variant.title).strip(), str(shopify_product['variants'][matched_index]['title']).strip())
+                            # print(variant.shopify_id, shopify_product['variants'][matched_index])
+                            # input('can i ')
                             if not shopify_processor.update_variant_title(variant.shopify_id, str(variant.title).strip(), new_product_title):
                                 print(f'Failed to update variant title of product: {new_product_title}')
 
@@ -1181,7 +1224,7 @@ class Luxottica_Shopify:
                     if not shopify_processor.update_variant_barcode(variant.shopify_id, str(variant.barcode_or_gtin).strip(), new_product_title):
                         print(f'Failed to update variant barcode of product: {new_product_title}')
             else:
-                print(f'{variant.title} not matched with any')
+                print(f'{new_product_title} {variant.title} not matched with any')
         except Exception as e: 
             self.print_logs(f'Exception in check_product_variant: {e}')
             if self.DEBUG: print(f'Exception in check_product_variant: {e}')
@@ -1201,11 +1244,12 @@ class Luxottica_Shopify:
             again_shopify_product = shopify_processor.get_product_from_shopify(product.shopify_id)
             for shopify_variant in again_shopify_product['product']['variants']:
                 for v in product.variants:
-                    if str(v.shopify_id).strip() == str(shopify_variant['id']).strip():
-                        if str(v.title).strip() != str(shopify_variant['title']).strip():
-                            if not shopify_processor.update_variant_title(v.shopify_id, str(v.title).strip(), new_product_title):
-                                print(f'Failed to update variant title of product: {new_product_title}')
-
+                    if str(v.sku).strip() == str(shopify_variant['sku']).strip() and str(v.title).strip() != str(shopify_variant['title']).strip():
+                        
+                        if not shopify_processor.update_variant_title(v.shopify_id, str(v.title).strip(), new_product_title):
+                            print(f'Failed to update variant title of product: {new_product_title}')
+                        break
+            
             if len(product.variants) > 1 and again_shopify_product['product']['options']:
                 for option in again_shopify_product['product']['options']:
                     if option['name'] == 'Title':

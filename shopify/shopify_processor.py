@@ -48,7 +48,7 @@ class Shopify_Processor:
             while True:
                 response = ''
                 while True:
-                    response = requests.get(url)
+                    response = requests.get(url=url, stream=True)
                     if response.status_code == 200:
                         json_data = json.loads(response.text)
                         products += list(json_data['products'])
@@ -218,7 +218,7 @@ class Shopify_Processor:
                 if response.status_code == 200: updation_flag = True
                 elif response.status_code == 429: sleep(1)
                 else: 
-                    self.print_logs(f'Failed to add image to product: {product_title}')
+                    self.print_logs(f'Failed to add image to product: {product_title} {response.text}')
                     sleep(1)
                 counter += 1
                 if counter == 10: break
@@ -271,7 +271,7 @@ class Shopify_Processor:
             
             for _ in range(0, 10):
                 try:
-                    response = requests.get(url=url, headers=headers)
+                    response = requests.get(url=url, headers=headers, stream=True)
                     if response.status_code == 200:
                         # image_attachment = base64.b64encode(response.content)
                         image_attachment = response.content
@@ -415,27 +415,27 @@ class Shopify_Processor:
             # description_tag = f'Buy {str(brand.name).strip().title()} {str(product.number).strip().upper()} {str(product.frame_code).strip().upper()} {str(product.name).strip().upper()} {str(product.metafields.for_who).strip().title()} {str(product.type).strip().title()}! ✓ Express WorldWide Shipping ✓ Secure Checkout ✓ 100% Original | LookerOnline |'
             # if '  ' in description_tag: description_tag = str(description_tag).strip().replace('  ', ' ')
             
-            if str(product.metafields.for_who).strip(): metafields.append({"namespace": "my_fields", "key": "for_who", "value": str(product.metafields.for_who).strip(), "value_type": "string"})
-            if str(product.frame_color).strip(): metafields.append({'namespace': 'my_fields', 'key': 'frame_color', "value": str(product.frame_color).strip(), "value_type": "string"})
-            if str(product.metafields.frame_material).strip(): metafields.append({'namespace': 'my_fields', 'key': 'frame_material', "value": str(product.metafields.frame_material).strip(), "value_type": "string"})
-            if str(product.metafields.frame_shape).strip(): metafields.append({'namespace': 'my_fields', 'key': 'frame_shape', "value": str(product.metafields.frame_shape).strip(), "value_type": "string"})
-            if str(product.lens_color).strip(): metafields.append({'namespace': 'my_fields', 'key': 'lens_color', "value": str(product.lens_color).strip(), "value_type": "string"})
-            if str(product.metafields.lens_material).strip(): metafields.append({'namespace': 'my_fields', 'key': 'lens_material', "value": str(product.metafields.lens_material).strip(), "value_type": "string"})
-            if str(product.metafields.lens_technology).strip(): metafields.append({'namespace': 'my_fields', 'key': 'lens_technology', "value": str(product.metafields.lens_technology).strip(), "value_type": "string"})
-            if str(product.metafields.product_size).strip(): metafields.append({'namespace': 'my_fields', 'key': 'product_size', "value": str(product.metafields.product_size).strip(), "value_type": "string"})
-            if str(product.metafields.gtin1).strip(): metafields.append({'namespace': 'my_fields', 'key': 'gtin1', "value": str(product.metafields.gtin1).strip(), "value_type": "string"}) 
-            if str(title_tag).strip(): metafields.append({'namespace': 'global', 'key': 'title_tag', "value": str(title_tag).strip(), "value_type": "string"}) 
-            if str(description_tag).strip(): metafields.append({'namespace': 'global', 'key': 'description_tag', "value": str(description_tag).strip(), "value_type": "string"})
+            if str(product.metafields.for_who).strip(): metafields.append({"namespace": "my_fields", "key": "for_who", "value": str(product.metafields.for_who).strip(), "type": "single_line_text_field"})
+            if str(product.frame_color).strip(): metafields.append({'namespace': 'my_fields', 'key': 'frame_color', "value": str(product.frame_color).strip(), "type": "single_line_text_field"})
+            if str(product.metafields.frame_material).strip(): metafields.append({'namespace': 'my_fields', 'key': 'frame_material', "value": str(product.metafields.frame_material).strip(), "type": "single_line_text_field"})
+            if str(product.metafields.frame_shape).strip(): metafields.append({'namespace': 'my_fields', 'key': 'frame_shape', "value": str(product.metafields.frame_shape).strip(), "type": "single_line_text_field"})
+            if str(product.lens_color).strip(): metafields.append({'namespace': 'my_fields', 'key': 'lens_color', "value": str(product.lens_color).strip(), "type": "single_line_text_field"})
+            if str(product.metafields.lens_material).strip(): metafields.append({'namespace': 'my_fields', 'key': 'lens_material', "value": str(product.metafields.lens_material).strip(), "type": "single_line_text_field"})
+            if str(product.metafields.lens_technology).strip(): metafields.append({'namespace': 'my_fields', 'key': 'lens_technology', "value": str(product.metafields.lens_technology).strip(), "type": "single_line_text_field"})
+            if str(product.metafields.product_size).strip(): metafields.append({'namespace': 'my_fields', 'key': 'product_size', "value": str(product.metafields.product_size).strip(), "type": "single_line_text_field"})
+            if str(product.metafields.gtin1).strip(): metafields.append({'namespace': 'my_fields', 'key': 'gtin1', "value": str(product.metafields.gtin1).strip(), "type": "single_line_text_field"}) 
+            if str(title_tag).strip(): metafields.append({'namespace': 'global', 'key': 'title_tag', "value": str(title_tag).strip(), "type": "single_line_text_field"}) 
+            if str(description_tag).strip(): metafields.append({'namespace': 'global', 'key': 'description_tag', "value": str(description_tag).strip(), "type": "single_line_text_field"})
 
-            if str(product.metafields.for_who).strip(): metafields.append({"namespace": "italian", "key": "per_chi", "value": str(product.metafields.for_who).strip(), "value_type": "string"})
-            if str(product.frame_color).strip(): metafields.append({'namespace': 'italian', 'key': 'colore_della_montatura', "value": str(product.frame_color).strip(), "value_type": "string"})
-            if str(product.metafields.frame_material).strip(): metafields.append({'namespace': 'italian', 'key': 'materiale_della_montatura', "value": str(product.metafields.frame_material).strip(), "value_type": "string"})
-            if str(product.metafields.frame_shape).strip(): metafields.append({'namespace': 'italian', 'key': 'forma', "value": str(product.metafields.frame_shape).strip(), "value_type": "string"})
-            if str(product.lens_color).strip(): metafields.append({'namespace': 'italian', 'key': 'colore_della_lente', "value": str(product.lens_color).strip(), "value_type": "string"})
-            if str(product.metafields.lens_material).strip(): metafields.append({'namespace': 'italian', 'key': 'materiale_della_lente', "value": str(product.metafields.lens_material).strip(), "value_type": "string"})
-            if str(product.metafields.lens_technology).strip(): metafields.append({'namespace': 'italian', 'key': 'tecnologia_della_lente', "value": str(product.metafields.lens_technology).strip(), "value_type": "string"})
-            if str(product.metafields.product_size).strip(): metafields.append({'namespace': 'italian', 'key': 'calibro_ponte_asta', "value": str(product.metafields.product_size).strip(), "value_type": "string"})
-            # if str(product.metafields.activity).strip(): metafields.append({'namespace': 'italian', 'key': 'attivita', "value": str(product.metafields.activity).strip(), "value_type": "string"})
+            if str(product.metafields.for_who).strip(): metafields.append({"namespace": "italian", "key": "per_chi", "value": str(product.metafields.for_who).strip(), "type": "single_line_text_field"})
+            if str(product.frame_color).strip(): metafields.append({'namespace': 'italian', 'key': 'colore_della_montatura', "value": str(product.frame_color).strip(), "type": "single_line_text_field"})
+            if str(product.metafields.frame_material).strip(): metafields.append({'namespace': 'italian', 'key': 'materiale_della_montatura', "value": str(product.metafields.frame_material).strip(), "type": "single_line_text_field"})
+            if str(product.metafields.frame_shape).strip(): metafields.append({'namespace': 'italian', 'key': 'forma', "value": str(product.metafields.frame_shape).strip(), "type": "single_line_text_field"})
+            if str(product.lens_color).strip(): metafields.append({'namespace': 'italian', 'key': 'colore_della_lente', "value": str(product.lens_color).strip(), "type": "single_line_text_field"})
+            if str(product.metafields.lens_material).strip(): metafields.append({'namespace': 'italian', 'key': 'materiale_della_lente', "value": str(product.metafields.lens_material).strip(), "type": "single_line_text_field"})
+            if str(product.metafields.lens_technology).strip(): metafields.append({'namespace': 'italian', 'key': 'tecnologia_della_lente', "value": str(product.metafields.lens_technology).strip(), "type": "single_line_text_field"})
+            if str(product.metafields.product_size).strip(): metafields.append({'namespace': 'italian', 'key': 'calibro_ponte_asta', "value": str(product.metafields.product_size).strip(), "type": "single_line_text_field"})
+            # if str(product.metafields.activity).strip(): metafields.append({'namespace': 'italian', 'key': 'attivita', "value": str(product.metafields.activity).strip(), "type": "single_line_text_field"})
 
 
             endpoint = 'products.json'
@@ -606,7 +606,8 @@ class Shopify_Processor:
                             for index2, image_360_url in enumerate(product.metafields.img_360_urls):
                                 # filename = str(image_360_url.split('/')[-1].strip().split('?')[0])[1:].strip()
                                 # if '?' in filename: filename = str(filename).split('?')[0].strip()
-                                filename = f'{product_title.replace(" ", "_").replace("/", "_")}_{index2 + 1}.jpg'
+                                filename = f'{product_title.replace(" ", "_").replace("/", "_")}_{index2 + 1}.png'
+                                if '?impolicy=MYL_EYE&wid=688' in image_360_url: image_360_url = image_360_url.replace('?impolicy=MYL_EYE&wid=688', '')
                                 images_url_and_name.append({'filename': filename, 'img_url': image_360_url})
 
                             # with ThreadPoolExecutor(max_workers=len(images_url_and_name)) as e:
@@ -1013,7 +1014,7 @@ class Shopify_Processor:
                 if response.status_code == 201: metafield_flag = True
                 elif response.status_code == 429: sleep(1)
                 else: 
-                    self.print_logs(f'{response.status_code} in adding product metafield {json_data}')
+                    self.print_logs(f'{response.status_code} in adding product metafield {json_data} {response.text}')
                     sleep(1)
                 counter += 1
                 if counter == 10: break
@@ -1029,14 +1030,14 @@ class Shopify_Processor:
         updation_flag = False
         try:
             endpoint = f'variants/{variant_id}.json'
-            json_value = {"variant": {"id": variant_id, "title": title}}
+            json_value = {"variant": {"id": variant_id, "option1": title}}
             counter = 0
             while not updation_flag:
                 response = self.session.put(url=(self.URL + endpoint), json=json_value)
                 if response.status_code == 200: updation_flag = True
                 elif response.status_code == 429: sleep(1)
                 else: 
-                    self.print_logs(f'Failed to update title of variant for product: {product_title}')
+                    self.print_logs(f'Failed to update title {title} of variant for product: {product_title} {response.text}')
                     sleep(1)
                 counter += 1
                 if counter == 10: break
@@ -1196,7 +1197,7 @@ class Shopify_Processor:
                     # else: self.print_logs(response.text)
                 elif response.status_code == 429: sleep(0.1)
                 else: 
-                    self.print_logs(f'{response.status_code} found in updating product inventory quantity of product: {product_title}')
+                    self.print_logs(f'{response.status_code} found in updating product inventory quantity of product: {product_title} {response.text}')
                     sleep(1)
                 counter += 1
                 if counter == 10: break
@@ -1286,11 +1287,11 @@ class Shopify_Processor:
                     self.set_country_code(variant.inventory_item_id)
 
                     
-                    if len(product.variants) > 1:
-                        for other_variant in product.variants:
-                            if other_variant.title != variant.title and other_variant.sku != variant.sku:
-                                if not self.update_variant_title(variant.shopify_id, other_variant.title, product_title):
-                                    self.print_logs(f'Failed to update variant title of product: {product_title}')
+                    # if len(product.variants) > 1:
+                    #     for other_variant in product.variants:
+                    #         if other_variant.title != variant.title and other_variant.sku != variant.sku:
+                    #             if not self.update_variant_title(variant.shopify_id, other_variant.title, product_title):
+                    #                 self.print_logs(f'Failed to update variant title of product: {product_title}')
 
                     flag = True
                 elif response.status_code == 429: sleep(1)
