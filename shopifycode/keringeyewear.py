@@ -1,25 +1,29 @@
-import os
-import base64
-import requests
-from time import sleep
+# import requests
+from re import template
 from models.brand import Brand
 from models.product import Product
 from models.variant import Variant
 from modules.files_reader import Files_Reader
+from time import sleep
+import json
+import os
+import base64
+from urllib.parse import quote
+from PIL import Image
 from modules.query_processor import Query_Processor
-from shopify.shopify_processor import Shopify_Processor
+from shopifycode.shopify_processor import Shopify_Processor
 
-class Luxottica_Shopify:
+class Keringeyewear_Shopify:
     def __init__(self, DEBUG: bool, config_file: str, query_processor: Query_Processor, logs_filename: str) -> None:
         self.DEBUG: bool = DEBUG
         self.config_file: str = config_file
-        self.query_processor: Query_Processor = query_processor
-        self.logs_filename: str = logs_filename
-        self.template_file_path = 'templates/Luxottica/'
+        self.template_file_path = 'templates/Keringeyewear/'
         self.new_products: list[Product] = []
         self.new_variants: list[Variant] = []
         self.updated_variants: list[Variant] = []
         self.not_found_variants: list[Variant] = []
+        self.query_processor = query_processor
+        self.logs_filename = logs_filename
         pass
 
     def controller(self, brands: list[Brand]) -> None:
@@ -31,78 +35,93 @@ class Luxottica_Shopify:
             
             for brand in brands:
                 print(f'Brand: {brand.name} | No. of Products: {len(brand.products)}')
-                self.printProgressBar(0, len(brand.products), prefix = 'Progress:', suffix = 'Complete', length = 50)
-
+                
+                products_count = shopify_processor.get_count_of_products_by_vendor(brand.name)
                 shopify_products = shopify_processor.get_products_by_vendor(brand.name)
                 
-                for product_index, product in enumerate(brand.products):
-                    # get product title
-                    new_product_title = self.create_product_title(brand, product)
-                    
-                    if product.shopify_id:
-                        shopify_product = self.get_matched_product(product.shopify_id, shopify_products)
+                self.printProgressBar(0, len(brand.products), prefix = 'Progress:', suffix = 'Complete', length = 50)
+                
+                if products_count == len(shopify_products):
+                    for product_index, product in enumerate(brand.products):
                         
-                        
-                        if shopify_product and 'Outlet' not in shopify_product['tags']:
-                            if self.DEBUG: print(new_product_title)
-
-                            self.check_product_title(new_product_title, product, shopify_product, shopify_processor)
-                            self.check_product_description(brand, product, shopify_product, shopify_processor)
-                            self.check_product_status(product, shopify_product, shopify_processor)
-                            self.check_product_type(product, shopify_product, shopify_processor)
-                            self.check_product_tags(brand, product, shopify_product, shopify_processor)
-                           
+                        # get product title
+                        new_product_title = self.create_product_title(brand, product)
+                
+                        if product.shopify_id:
+                            # shopify_product = self.get_product_from_shopify(product.shopify_id)
+                            shopify_product = self.get_matched_product(product.shopify_id, shopify_products)
                             
-                            # check if database product has 360 images for product
-                            if product.metafields.img_360_urls:
-                                # check if the total number of 360 images of shopify product is less than total number of 360 images in database
-                                if len(shopify_product['images']) < len(product.metafields.img_360_urls):
-                                    # add 360 images to the shopify product
-                                    self.add_product_360_images(shopify_product, product, new_product_title, shopify_processor)
+                            if shopify_product and 'Outlet' not in shopify_product['tags']:
+                                # if self.DEBUG: print(new_product_title)
 
-                                self.check_product_360_images_tag(product, shopify_product, shopify_processor)
-                            
-                            elif not shopify_product['image'] and str(product.metafields.img_url).strip():
-                                self.add_product_image(product, new_product_title, shopify_processor)
-                            
-                            image_description = self.create_product_image_description(brand, product)
-                            if image_description: 
-                                self.check_product_images_alt_text(image_description, new_product_title, shopify_product, shopify_processor)
+                                # self.check_product_title(new_product_title, product, shopify_product, shopify_processor)
+                                # self.check_product_description(brand, product, shopify_product, shopify_processor)
+                                # self.check_product_status(product, shopify_product, shopify_processor)
+                                # self.check_product_type(product, shopify_product, shopify_processor)
+                                # self.check_product_tags(brand, product, shopify_product, shopify_processor)
 
-                            self.check_product_options(product, shopify_product, shopify_processor)
-                            
-                            shopify_metafields = shopify_processor.get_product_metafields_from_shopify(product.shopify_id)
-                            if shopify_metafields:
-                                self.check_product_metafields(new_product_title, brand, product, shopify_metafields, shopify_processor)
-                            else:
-                                self.add_product_metafeilds(product, shopify_processor)
+                                # check if database product has 360 images for product
+                                # if product.metafields.img_360_urls:
+                                #     # check if the total number of 360 images of shopify product is less than total number of 360 images in database
+                                #     if len(shopify_product['images']) < len(product.metafields.img_360_urls):
+                                #         # add 360 images to the shopify product
+                                #         self.add_product_360_images(shopify_product, product, new_product_title, shopify_processor)
 
-                            shopify_italian_metafields = shopify_processor.get_product_italian_metafields_from_shopify(product.shopify_id)
-                            
-                            if shopify_italian_metafields:
-                                self.check_product_italian_metafields(new_product_title, product, shopify_metafields, shopify_processor)
-                            else:
-                                self.add_product_italian_metafeilds(product, shopify_processor)
+                                #     self.check_product_360_images_tag(product, shopify_product, shopify_processor)
+                                
+                                # elif not shopify_product['image'] and str(product.metafields.img_url).strip():
+                                #     self.add_product_image(product, new_product_title, shopify_processor)
+                                
+                                # image_description = self.create_product_image_description(brand, product)
+                                # if image_description: 
+                                #     self.check_product_images_alt_text(image_description, new_product_title, shopify_product, shopify_processor)
 
-                            for variant in product.variants:
-                                if  not variant.shopify_id: self.add_new_variant(variant, product, new_product_title, shopify_processor)
-                                else: self.check_product_variant(new_product_title, variant, product, shopify_product, shopify_processor)
-                                    
-                            
-                        else: 
-                            if shopify_product: 
-                                self.print_logs(f'Outlet tag found for {new_product_title}')
-                            else:
-                                # this product is deleted from the store
-                                self.print_logs(f'{new_product_title} product not found on shopify store')
-                    
-                    else:
-                        self.add_new_product(new_product_title, product, brand, shopify_processor)
+                                # self.check_product_options(product, shopify_product, shopify_processor)
+                                
+                                # shopify_metafields = shopify_processor.get_product_metafields_from_shopify(product.shopify_id)
+                                # if shopify_metafields:
+                                #     self.check_product_metafields(new_product_title, brand, product, shopify_metafields, shopify_processor)
+                                # else:
+                                #     self.add_product_metafeilds(product, shopify_processor)
 
-                    self.printProgressBar(product_index + 1, len(brand.products), prefix = 'Progress:', suffix = 'Complete', length = 50)
-        except Exception as e: 
-            self.print_logs(f'Exception in Luxottica_Shopify controller: {e}')
-            if self.DEBUG: print(f'Exception in Luxottica_Shopify controller: {e}')
+                                # shopify_italian_metafields = shopify_processor.get_product_italian_metafields_from_shopify(product.shopify_id)
+                                # if shopify_italian_metafields:
+                                #     self.check_product_italian_metafields(new_product_title, product, shopify_metafields, shopify_processor)
+                                # else:
+                                #     self.add_product_italian_metafeilds(product, shopify_processor)
+                            
+                                for variant in product.variants:
+                                    if variant.shopify_id: self.check_product_variant(new_product_title, variant, product, shopify_product, shopify_processor)
+                                    else: 
+                                        self.add_new_variant(variant, product, new_product_title, shopify_processor)
+
+                                        shopify_metafields = shopify_processor.get_product_metafields_from_shopify(product.shopify_id)
+                                        if shopify_metafields:
+                                            self.check_product_metafields(new_product_title, brand, product, shopify_metafields, shopify_processor)
+                                        else:
+                                            self.add_product_metafeilds(product, shopify_processor)
+
+                                        shopify_italian_metafields = shopify_processor.get_product_italian_metafields_from_shopify(product.shopify_id)
+                                        if shopify_italian_metafields:
+                                            self.check_product_italian_metafields(new_product_title, product, shopify_metafields, shopify_processor)
+                                        else:
+                                            self.add_product_italian_metafeilds(product, shopify_processor)
+                            
+                            
+                            else: 
+                                if shopify_product: 
+                                    self.print_logs(f'Outlet tag found for {new_product_title}')
+                                else:
+                                    # this product is deleted from the store
+                                    self.print_logs(f'{new_product_title} product not found on shopify store')
+                        else:
+                            self.add_new_product(new_product_title, product, brand, shopify_processor)
+
+                        self.printProgressBar(product_index + 1, len(brand.products), prefix = 'Progress:', suffix = 'Complete', length = 50)
+            
+        except Exception as e:
+            self.print_logs(f'Exception in Keringeyewear_Shopify controller: {e}')
+            if self.DEBUG: print(f'Exception in Keringeyewear_Shopify controller: {e}')
             else: pass
 
     # get product template path 
@@ -218,8 +237,8 @@ class Luxottica_Shopify:
             if self.DEBUG: print(f'Exception in get_original_text: {e}')
             else: pass
         finally: return template
-    
-    # check product title and update it if not matched
+
+    # create product title
     def create_product_title(self, brand: Brand, product: Product) -> str:
         title = ''
         try:
@@ -233,7 +252,6 @@ class Luxottica_Shopify:
                 if str(product.name).strip(): title += f' {str(product.name).strip().upper()}'
                 if str(product.number).strip(): title += f' {str(product.number).strip().upper()}'
                 if str(product.frame_code).strip(): title += f' {str(product.frame_code).strip().upper()}'
-
                 # if str(brand.name).strip(): title += f'{str(brand.name).strip().title()} '
                 # if str(product.number).strip(): title += f'{str(product.number).strip().upper()} '
                 # if str(product.name).strip(): title += f'{str(product.name).strip().upper()} '
@@ -243,17 +261,7 @@ class Luxottica_Shopify:
                 title = str(title).strip()
                 if '  ' in title: title = str(title).strip().replace('  ', ' ')
                 if str(title).strip()[-1] == '-': title = str(title)[:-1].strip()
-
-                # y = title.split(' ')
-                # counter = 0
-                # for i in range(0, len(y)-1):
-                #     if str(product.number).strip().upper() == str(y[i]).strip():
-                #         counter += 1
-                #         if counter == 2:
-                #             del y[i]
-                #             break
-                # title = ' '.join(y)
-        except Exception as e: 
+        except Exception as e:
             self.print_logs(f'Exception in create_product_title: {e}')
             if self.DEBUG: print(f'Exception in create_product_title: {e}')
             else: pass
@@ -322,38 +330,194 @@ class Luxottica_Shopify:
                 if str(product['id']).strip() == shopify_id:
                     shopify_product = product
                     break
-        except Exception as e: 
+        except Exception as e:
             self.print_logs(f'Exception in get_matched_product: {e}')
             if self.DEBUG: print(f'Exception in get_matched_product: {e}')
             else: pass
         finally: return shopify_product
 
-    # get product description template
-    def get_product_description_from_template(self, description_template: str, product: Product) -> str:
-        product_description = ''
+    # check product title and update it if not matched
+    def check_product_title(self, new_product_title: str, product: Product, shopify_product: dict, shopify_processor: Shopify_Processor) -> None:
         try:
-            product_description = str(description_template).strip().replace('{product.number}', str(product.number).strip().upper()).strip()
-
-            if str(product.name).strip(): product_description = str(product_description).strip().replace('{product.name}', str(product.name).strip().upper()).strip()
-            else: product_description = str(product_description).strip().replace(' {product.name}', '').strip()
-            
-            product_description = str(product_description).strip().replace('{product.frame_code}', str(product.frame_code).strip().upper()).strip()
-            
-            frame_color = ''
-            if '/' in product.frame_color: frame_color = str(product.frame_color).strip().split('/')[0].strip()
-            else: frame_color = str(product.frame_color).strip()
-            product_description = str(product_description).strip().replace('{product.frame_color}', str(frame_color).strip().lower()).strip()
-            
-            lens_color = ''
-            if '/' in product.lens_color: lens_color = str(product.lens_color).strip().split('/')[0].strip()
-            else: lens_color = str(product.lens_color).strip()
-            product_description = str(product_description).strip().replace('{product.lens_color}', str(lens_color).strip().lower()).strip()
-            product_description = str(product_description).strip().replace('{product.metafields.for_who}', str(product.metafields.for_who).strip().lower()).strip()
-        except Exception as e: 
-            self.print_logs(f'Exception in get_product_description_template: {e}')
-            if self.DEBUG: print(f'Exception in get_product_description_template: {e}')
+            # update product title if shopify product title is not equal to database product title
+            if str(new_product_title).strip() != str(shopify_product['title']).strip():
+                if  not shopify_processor.update_product_title(product.shopify_id, new_product_title):
+                    print(f'Failed to update product title\n Old Product Title: {shopify_product["title"]}\nNew Product Title: {new_product_title}')
+        except Exception as e:
+            self.print_logs(f'Excepption in check_product_title: {e}')
+            if self.DEBUG: print(f'Excepption in check_product_title: {e}')
             else: pass
-        finally: return product_description
+
+    # check product description of shopify product and update it if not matched
+    def check_product_description(self, brand: Brand, product: Product, shopify_product: dict, shopify_processor: Shopify_Processor) -> None:
+        try:
+            product_description_template_path = self.get_template_path('Product Description', brand, product)
+            product_description_template = self.get_template(product_description_template_path)
+            if product_description_template:
+                product_description = self.get_original_text(product_description_template, brand, product)
+
+                # update product status if shopify product status is not equal to database product status
+                if str(product_description).strip() != str(shopify_product['body_html']).strip():
+                    if not shopify_processor.update_product_body_html(product.shopify_id, str(product_description).strip()):
+                        print(f'Failed to update product description\n Old Product Description: {shopify_product["body_html"]}\nNew Product Description: {str(product_description).strip()}')
+        except Exception as e:
+            self.print_logs(f'Excepption in check_product_description: {e}')
+            if self.DEBUG: print(f'Excepption in check_product_description: {e}')
+            else: pass
+
+    # check product status of shopify product and update it if not matched
+    def check_product_status(self, product: Product, shopify_product: dict, shopify_processor: Shopify_Processor) -> None:
+        try:
+            # update product status if shopify product status is not equal to database product status
+            if str(product.status).strip() != str(shopify_product['status']).strip():
+                if not shopify_processor.update_product_status(product.shopify_id, str(product.status).strip()):
+                    print(f'Failed to update product status\n Old Product Status: {shopify_product["status"]}\nNew Product Status: {str(product.status).strip()}')
+        except Exception as e:
+            self.print_logs(f'Excepption in check_product_status: {e}')
+            if self.DEBUG: print(f'Excepption in check_product_status: {e}')
+            else: pass
+
+    # check product type of shopify product and update it if not matched
+    def check_product_type(self, product: Product, shopify_product: dict, shopify_processor: Shopify_Processor) -> None:
+        try:
+            # update product type if shopify product type is not equal to database product type
+            if str(product.type).strip() != str(shopify_product['product_type']).strip():
+                if not shopify_processor.update_product_type(product.shopify_id, str(product.type).strip()):
+                    print(f'Failed to update product type\n Old Product Type: {shopify_product["product_type"]}\nNew Product Type: {str(product.type).strip()}')
+        except Exception as e:
+            self.print_logs(f'Excepption in check_product_type: {e}')
+            if self.DEBUG: print(f'Excepption in check_product_type: {e}')
+            else: pass
+
+    # check product tags of shopify product and update them if not matched
+    def check_product_tags(self, brand: Brand, product: Product, shopify_product: dict, shopify_processor: Shopify_Processor) -> None:
+        try:
+            # update product tags
+            shopify_product_tags_list = str(shopify_product['tags']).strip().split(', ')
+            tags = self.get_product_tags(brand, product, shopify_product_tags_list)
+            if tags:
+                new_tags = f"{str(shopify_product['tags']).strip()}, {tags}"
+                if not shopify_processor.update_product_tags(product.shopify_id, new_tags):
+                    print(f'Failed to update product type\n Old Product Tags: {shopify_product["tags"]}\nNew Product Tags: {new_tags}')
+        except Exception as e:
+            self.print_logs(f'Excepption in check_product_tags: {e}')
+            if self.DEBUG: print(f'Excepption in check_product_tags: {e}')
+            else: pass
+
+    # add 360 images to the product on shopify
+    def add_product_360_images(self, shopify_product: dict, product: Product, new_product_title: str, shopify_processor: Shopify_Processor) -> None:
+        try:
+            
+            images_downloaded = []
+            # first download all the images
+            for index, image_360_url in enumerate(product.metafields.img_360_urls):
+                image_filename = ''
+                number = str(product.number).replace('/', '_').replace('-', '_').strip()
+                name = str(product.name).replace('/', '_').replace('-', '_').strip()
+                frame_code = str(product.frame_code).replace('/', '_').replace('-', '_').strip()
+                if product.lens_code:
+                    lens_code = str(product.lens_code).replace('/', '_').replace('-', '_').strip()
+                    image_filename = f'{number}_{name}_{frame_code}_{lens_code}_{index+1}.png'
+                else:
+                    image_filename = f'{number}_{name}_{frame_code}_{index+1}.png'
+                # download image
+                image_attachment = shopify_processor.download_image(image_360_url)
+                
+                if image_attachment:
+                    # save downloaded image
+                    with open(image_filename, 'wb') as f: f.write(image_attachment)
+                    # crop image to the correct size
+                    # shopify_processor.crop_downloaded_image(image_filename)
+                    # add downloaded image name to the list
+                    images_downloaded.append(image_filename)
+
+            
+            # if total number of images downloaded are more than images on shopify
+            if len(images_downloaded) > len(shopify_product['images']):
+                
+                # first delete all the images of the shopify product
+                for shopify_image in shopify_product['images']:
+                    shopify_processor.delete_product_image(product.shopify_id, shopify_image['id'], new_product_title)
+                
+                for image_downloaded in images_downloaded:
+
+                    f = open(image_downloaded, 'rb')
+                    image_attachment = base64.b64encode(f.read())
+                    f.close()
+
+                    shopify_processor.update_product_image(product.shopify_id, image_attachment, image_downloaded, new_product_title, new_product_title)
+            
+            # delete all downloaded images
+            for image_downloaded in images_downloaded:
+                os.remove(image_downloaded)
+            
+        except Exception as e:
+            self.print_logs(f'Excepption in add_product_360_images: {e}')
+            if self.DEBUG: print(f'Excepption in add_product_360_images: {e}')
+            else: pass
+
+    # check image 360 tag on the shopify product and if not found add it
+    def check_product_360_images_tag(self, product: Product, shopify_product: dict, shopify_processor: Shopify_Processor) -> None:
+        try:
+            again_shopify_product = shopify_processor.get_product_from_shopify(shopify_product['id'])
+            spin_images = len(again_shopify_product['product']['images'])
+            if int(spin_images) > 1 and f'spinimages={spin_images}' not in str(again_shopify_product['product']['tags']).strip():
+                tags = f"{again_shopify_product['product']['tags']}, spinimages={spin_images}"
+                shopify_processor.update_product_tags(product.shopify_id, tags)
+        except Exception as e:
+            self.print_logs(f'Excepption in check_product_360_images_tag: {e}')
+            if self.DEBUG: print(f'Excepption in check_product_360_images_tag: {e}')
+            else: pass
+
+    # check alt text of images 360 on the shopify product and if not found add it
+    def check_product_images_alt_text(self, image_description: str, new_product_title: str, shopify_product: dict, shopify_processor: Shopify_Processor) -> None:
+        try:
+            if image_description:
+                if shopify_product['images']:
+                    for image in shopify_product['images']:
+                        image_id = str(image['id']).strip()
+                        product_id = str(image['product_id']).strip()
+                        if image_description != str(image['alt']):
+                            shopify_processor.update_product_image_alt_text(product_id, image_id, image_description, new_product_title)
+                else:
+                    if shopify_product['image']:
+                        image = shopify_product['image']
+                        image_id = str(image['id']).strip()
+                        product_id = str(image['product_id']).strip()
+                        if image_description != str(image['alt']):
+                            shopify_processor.update_product_image_alt_text(product_id, image_id, image_description, new_product_title)
+        except Exception as e: 
+            self.print_logs(f'Excepption in check_product_images_alt_text: {e}')
+            if self.DEBUG: print(f'Excepption in check_product_images_alt_text: {e}')
+            else: pass
+
+    # add product image to the shopify
+    def add_product_image(self, product: Product, new_product_title: str, shopify_processor: Shopify_Processor) -> None:
+        try:
+            image_attachment = shopify_processor.download_image(str(product.metafields.img_url).strip())
+            if image_attachment:
+                image_attachment = base64.b64encode(image_attachment)
+                filename = f"{str(new_product_title).split('-')[0].strip().lower().replace(' ', '-')}-01.jpg"
+                alt = f"{str(new_product_title).split('-')[0].strip()}"
+                if not shopify_processor.update_product_image(product.shopify_id, image_attachment, filename, new_product_title, new_product_title):
+                    print(f'Failed to update product: {new_product_title} image')
+            else: print(f'Failed to download image for {new_product_title}')
+        except Exception as e:
+            self.print_logs(f'Excepption in add_product_image: {e}')
+            if self.DEBUG: print(f'Excepption in add_product_image: {e}')
+            else: pass
+
+    # check product options and modify them if needed
+    def check_product_options(self, product: Product, shopify_product: dict, shopify_processor: Shopify_Processor) -> None:
+        try:
+            if len(product.variants) > 1 and shopify_product['options']:
+                for option in shopify_product['options']:
+                    if option['name'] == 'Title':
+                        shopify_processor.update_product_options(option['product_id'], option['id'], 'Size')
+        except Exception as e:
+            self.print_logs(f'Excepption in check_product_options: {e}')
+            if self.DEBUG: print(f'Excepption in check_product_options: {e}')
+            else: pass
 
     # get product title tag
     def get_title_tag(self, brand: Brand, product: Product) -> str:
@@ -361,6 +525,7 @@ class Luxottica_Shopify:
         try:
             template_path = f'{self.template_file_path}{brand.name}/{product.type}/meta_title.txt'
             template = self.get_template(template_path)
+            # print(template)
             if template:
                 title_tag = template
                 if '{Brand.Name}' in title_tag: title_tag = str(title_tag).replace('{Brand.Name}', str(brand.name).strip().title()).strip()
@@ -439,13 +604,13 @@ class Luxottica_Shopify:
                 if title_tag:
                     title_tag = str(title_tag).replace('  ', ' ').strip()
                     if len(title_tag) > 60: title_tag = str(title_tag).replace('| LookerOnline', '| LO')
-        except Exception as e: 
+        except Exception as e:
             self.print_logs(f'Exception in get_title_tag: {e}')
             if self.DEBUG: print(f'Exception in get_title_tag: {e}')
             else: pass
         finally: return title_tag
 
-    # get product description tag
+    # get product description tag 
     def get_description_tag(self, brand: Brand, product: Product) -> str:
         description_tag = ''
         try:
@@ -529,12 +694,12 @@ class Luxottica_Shopify:
                     description_tag = str(description_tag).replace('  ', ' ').replace('âœ“', '✓').strip()
             # description_tag = f'Buy {str(brand.name).strip().title()} {str(product.number).strip().upper()} {str(product.frame_code).strip().upper()} {str(product.name).strip().upper()} {str(product.metafields.for_who).strip().title()} {str(product.type).strip().title()}! ✓ Express WorldWide Shipping ✓ Secure Checkout ✓ 100% Original | LookerOnline |'
             # if '  ' in description_tag: description_tag = str(description_tag).strip().replace('  ', ' ')
-        except Exception as e: 
+        except Exception as e:
             self.print_logs(f'Exception in get_description_tag: {e}')
             if self.DEBUG: print(f'Exception in get_description_tag: {e}')
             else: pass
         finally: return description_tag
-
+    
     # get specific matched metafileds from all metafields of product
     def get_matched_metafiled(self, shopify_metafields: list[dict], metafield_name: str):
         metafield_id = ''
@@ -547,7 +712,7 @@ class Luxottica_Shopify:
                     metafield_value = str(shopify_metafield['value']).strip()
                     metafield_found_status = True
                     break
-        except Exception as e: 
+        except Exception as e:
             self.print_logs(f'Exception in get_matched_metafiled: {e}')
             if self.DEBUG: print(f'Exception in get_matched_metafiled: {e}')
             else: pass
@@ -561,249 +726,11 @@ class Luxottica_Shopify:
                 if str(shopify_variant['id']).strip() == str(database_variant.shopify_id).strip():
                     matched_index = index
                     break
-        except Exception as e: 
+        except Exception as e:
             self.print_logs(f'Exception in create_product_title: {e}')
             if self.DEBUG: print(f'Exception in create_product_title: {e}')
             else: pass
         finally: return matched_index
-
-    # get product description template path 
-    def get_description_template_path(self, brand: Brand, product: Product) -> str:
-        description_template_path = ''
-        try:
-            description_template_path = f'{self.template_file_path}{brand.name}/{product.type}/product_description.txt'
-        except Exception as e: 
-            self.print_logs(f'Exception in get_description_template_path: {e}')
-            if self.DEBUG: print(f'Exception in get_description_template_path: {e}')
-            else: pass
-        finally: return description_template_path
-    
-    # check product title and update it if not matched
-    def check_product_title(self, new_product_title: str, product: Product, shopify_product: dict, shopify_processor: Shopify_Processor) -> None:
-        try:
-            # update product title if shopify product title is not equal to database product title
-            if str(new_product_title).strip() != str(shopify_product['title']).strip():
-                if  not shopify_processor.update_product_title(product.shopify_id, new_product_title):
-                    print(f'Failed to update product title\n Old Product Title: {shopify_product["title"]}\nNew Product Title: {new_product_title}')
-        except Exception as e: 
-            self.print_logs(f'Excepption in check_product_title: {e}')
-            if self.DEBUG: print(f'Excepption in check_product_title: {e}')
-            else: pass
-
-    # check product description of shopify product and update it if not matched
-    def check_product_description(self, brand: Brand, product: Product, shopify_product: dict, shopify_processor: Shopify_Processor) -> None:
-        try:
-            # # check if we have templet for this brand
-            # if str(description_template).strip():
-            #     body_html = self.get_product_description_from_template(description_template, product)
-            product_description_template_path = self.get_template_path('Product Description', brand, product)
-            product_description_template = self.get_template(product_description_template_path)
-            if product_description_template:
-                product_description = self.get_original_text(product_description_template, brand, product)
-
-                # update product status if shopify product status is not equal to database product status
-                if str(product_description).strip() != str(shopify_product['body_html']).strip():
-                    if not shopify_processor.update_product_body_html(product.shopify_id, str(product_description).strip()):
-                        print(f'Failed to update product description\n Old Product Description: {shopify_product["body_html"]}\nNew Product Description: {str(product_description).strip()}')
-        except Exception as e: 
-            self.print_logs(f'Excepption in check_product_description: {e}')
-            if self.DEBUG: print(f'Excepption in check_product_description: {e}')
-            else: pass
-
-    # check product status of shopify product and update it if not matched
-    def check_product_status(self, product: Product, shopify_product: dict, shopify_processor: Shopify_Processor) -> None:
-        try:
-            # update product status if shopify product status is not equal to database product status
-            if str(product.status).strip() != str(shopify_product['status']).strip():
-                if not shopify_processor.update_product_status(product.shopify_id, str(product.status).strip()):
-                    print(f'Failed to update product status\n Old Product Status: {shopify_product["status"]}\nNew Product Status: {str(product.status).strip()}')
-        except Exception as e: 
-            self.print_logs(f'Excepption in check_product_status: {e}')
-            if self.DEBUG: print(f'Excepption in check_product_status: {e}')
-            else: pass
-
-    # check product type of shopify product and update it if not matched
-    def check_product_type(self, product: Product, shopify_product: dict, shopify_processor: Shopify_Processor) -> None:
-        try:
-            # update product type if shopify product type is not equal to database product type
-            if str(product.type).strip() != str(shopify_product['product_type']).strip():
-                if not shopify_processor.update_product_type(product.shopify_id, str(product.type).strip()):
-                    print(f'Failed to update product type\n Old Product Type: {shopify_product["product_type"]}\nNew Product Type: {str(product.type).strip()}')
-        except Exception as e: 
-            self.print_logs(f'Excepption in check_product_type: {e}')
-            if self.DEBUG: print(f'Excepption in check_product_type: {e}')
-            else: pass
-
-    # check product tags of shopify product and update them if not matched
-    def check_product_tags(self, brand: Brand, product: Product, shopify_product: dict, shopify_processor: Shopify_Processor) -> None:
-        try:
-            # update product tags
-            shopify_product_tags_list = str(shopify_product['tags']).strip().split(', ')
-            tags = self.get_product_tags(brand, product, shopify_product_tags_list)
-            if tags:
-                new_tags = f"{str(shopify_product['tags']).strip()}, {tags}"
-                if not shopify_processor.update_product_tags(product.shopify_id, new_tags):
-                    print(f'Failed to update product type\n Old Product Tags: {shopify_product["tags"]}\nNew Product Tags: {new_tags}')
-        except Exception as e: 
-            self.print_logs(f'Excepption in check_product_tags: {e}')
-            if self.DEBUG: print(f'Excepption in check_product_tags: {e}')
-            else: pass
-
-    # add 360 images to the product on shopify
-    def add_product_360_images(self, shopify_product: dict, product: Product, new_product_title: str, shopify_processor: Shopify_Processor) -> None:
-        try:
-            
-            images_downloaded = []
-            # first download all the images
-            
-            for index, image_360_url in enumerate(product.metafields.img_360_urls):
-                image_360_url = str(image_360_url).strip()
-                # if '.jpg' in image_360_url: image_360_url.replace('.jpg', '.png')
-                image_filename = ''
-
-                if '?impolicy=MYL_EYE&wid=688' not in image_360_url:
-                    image_360_url = str(image_360_url).replace('?impolicy=MYL_EYE&wid=688', '').strip()
-
-                try:
-                    image_filename = image_360_url.split('/')[-1].strip()
-    
-                    if '?' in image_filename: image_filename = str(image_filename).split('?')[0].strip()
-                    if image_filename[0] == '0': image_filename = image_filename[1:]
-
-                    
-                    # if '?impolicy=MYL_EYE&wid=688' not in image_360_url:
-                    #     image_360_url = f'{image_360_url}?impolicy=MYL_EYE&wid=688'
-                except Exception as e:
-                    self.print_logs(f'Exception in add_product_360_images image_filename: {e}')
-                    if self.DEBUG: print(f'Exception in add_product_360_images image_filename: {e}')
-                    print(image_360_url)
-                    image_filename = str(new_product_title).strip().replace(' ', '_')
-                    if '.jpg' in image_360_url: image_filename = f'{image_filename}__{index + 1}.jpg'
-                    else: image_filename = f'{image_filename}__{index + 1}.png'
-
-
-                image_attachment = self.download_image(image_360_url)
-
-                if image_attachment:
-                    
-                    # save downloaded image
-                    with open(image_filename, 'wb') as f: f.write(image_attachment)
-                    # crop image to the correct size
-                    # shopify_processor.crop_downloaded_image(image_filename)
-                    # add downloaded image name to the list
-                    images_downloaded.append(image_filename)
-
-            
-            # if total number of images downloaded are more than images on shopify
-            if len(images_downloaded) > len(shopify_product['images']):
-                
-                # first delete all the images of the shopify product
-                for shopify_image in shopify_product['images']:
-                    shopify_processor.delete_product_image(product.shopify_id, shopify_image['id'], new_product_title)
-
-
-                for image_downloaded in images_downloaded:
-
-                    f = open(image_downloaded, 'rb')
-                    image_attachment = base64.b64encode(f.read())
-                    f.close()
-
-                    shopify_processor.update_product_image(product.shopify_id, image_attachment, image_downloaded, new_product_title, new_product_title)
-            
-            # delete all downloaded images
-            for image_downloaded in images_downloaded:
-                os.remove(image_downloaded)
-            
-        except Exception as e: 
-            self.print_logs(f'Excepption in add_product_360_images: {e}')
-            if self.DEBUG: print(f'Excepption in add_product_360_images: {e}')
-            else: pass
-
-    # this function will download image from the given url
-    def download_image(self, url: str):
-        image_attachment = ''
-        try:
-            
-            for _ in range(0, 10):
-                try:
-                    response = requests.get(url=url)
-                    if response.status_code == 200:
-                        image_attachment = response.content
-                        break
-                    elif response.status_code == 404: 
-                        self.print_logs(f'404 in downloading this image {url}')
-                        break
-                    else: 
-                        self.print_logs(f'{response.status_code} found for downloading image')
-                        sleep(1)
-                except: pass
-        except Exception as e:
-            if self.DEBUG: print(f'Exception in download_image: {str(e)}')
-            self.print_logs(f'Exception in download_image: {str(e)}')
-        finally: return image_attachment
-
-    # check image 360 tag on the shopify product and if not found add it
-    def check_product_360_images_tag(self, product: Product, shopify_product: dict, shopify_processor: Shopify_Processor) -> None:
-        try:
-            again_shopify_product = shopify_processor.get_product_from_shopify(shopify_product['id'])
-            spin_images = len(again_shopify_product['product']['images'])
-            if int(spin_images) > 1 and f'spinimages={spin_images}' not in str(again_shopify_product['product']['tags']).strip():
-                tags = f"{again_shopify_product['product']['tags']}, spinimages={spin_images}"
-                shopify_processor.update_product_tags(product.shopify_id, tags)
-        except Exception as e: 
-            self.print_logs(f'Excepption in check_product_360_images_tag: {e}')
-            if self.DEBUG: print(f'Excepption in check_product_360_images_tag: {e}')
-            else: pass
-
-    # check alt text of images 360 on the shopify product and if not found add it
-    def check_product_images_alt_text(self, image_description: str, new_product_title: str, shopify_product: dict, shopify_processor: Shopify_Processor) -> None:
-        try:
-            if image_description:
-                if shopify_product['images']:
-                    for image in shopify_product['images']:
-                        image_id = str(image['id']).strip()
-                        product_id = str(image['product_id']).strip()
-                        if image_description != str(image['alt']):
-                            shopify_processor.update_product_image_alt_text(product_id, image_id, image_description, new_product_title)
-                else:
-                    if shopify_product['image']:
-                        image = shopify_product['image']
-                        image_id = str(image['id']).strip()
-                        product_id = str(image['product_id']).strip()
-                        if image_description != str(image['alt']):
-                            shopify_processor.update_product_image_alt_text(product_id, image_id, image_description, new_product_title)
-        except Exception as e: 
-            self.print_logs(f'Excepption in check_product_images_alt_text: {e}')
-            if self.DEBUG: print(f'Excepption in check_product_images_alt_text: {e}')
-            else: pass
-
-    # add product image to the shopify
-    def add_product_image(self, product: Product, new_product_title: str, shopify_processor: Shopify_Processor) -> None:
-        try:
-            image_attachment = shopify_processor.download_image(str(product.metafields.img_url).strip())
-            if image_attachment:
-                image_attachment = base64.b64encode(image_attachment)
-                filename = f"{str(new_product_title).split('-')[0].strip().lower().replace(' ', '-')}-01.jpg"
-                alt = f"{str(new_product_title).split('-')[0].strip()}"
-                if not shopify_processor.update_product_image(product.shopify_id, image_attachment, filename, new_product_title, new_product_title):
-                    print(f'Failed to update product: {new_product_title} image')
-            else: print(f'Failed to download image for {new_product_title}')
-        except Exception as e: 
-            self.print_logs(f'Excepption in add_product_image: {e}')
-            if self.DEBUG: print(f'Excepption in add_product_image: {e}')
-            else: pass
-
-    # check product options and modify them if needed
-    def check_product_options(self, product: Product, shopify_product: dict, shopify_processor: Shopify_Processor) -> None:
-        try:
-            if len(product.variants) > 1 and shopify_product['options']:
-                for option in shopify_product['options']:
-                    if option['name'] == 'Title':
-                        shopify_processor.update_product_options(option['product_id'], option['id'], 'Size')
-        except Exception as e: 
-            self.print_logs(f'Excepption in check_product_options: {e}')
-            if self.DEBUG: print(f'Excepption in check_product_options: {e}')
-            else: pass
 
     # get product tags whcih are not on shopify
     def get_product_tags(self, brand: Brand, product: Product, shopify_product_tags: list[str]) -> str:
@@ -813,6 +740,7 @@ class Luxottica_Shopify:
             if str(product.number).strip() and str(product.number).strip().upper() not in shopify_product_tags: tags.append(str(product.number).strip().upper())
             if str(product.name).strip() and str(product.name).strip().upper() not in shopify_product_tags: tags.append(str(product.name).strip().upper())
             if str(product.frame_code).strip() and str(product.frame_code).strip().upper() not in shopify_product_tags: tags.append(str(product.frame_code).strip().upper())
+            if str(product.lens_code).strip() and str(product.lens_code).strip().upper() not in shopify_product_tags: tags.append(str(product.lens_code).strip().upper())
             if str(product.type).strip() and str(product.type).strip() not in shopify_product_tags: tags.append(str(product.type).strip())
             if str(product.metafields.for_who).strip():
                 if str(product.metafields.for_who).strip().lower() == 'unisex':
@@ -828,7 +756,7 @@ class Luxottica_Shopify:
             if str(product.metafields.lens_technology).strip() and str(product.metafields.lens_technology).strip() not in shopify_product_tags: tags.append(str(product.metafields.lens_technology).strip())
             if str(product.metafields.frame_shape).strip() and str(product.metafields.frame_shape).strip() not in shopify_product_tags: tags.append(str(product.metafields.frame_shape).strip())
             if str(product.metafields.frame_material).strip() and str(product.metafields.frame_material).strip() not in shopify_product_tags: tags.append(str(product.metafields.frame_material).strip())
-        except Exception as e: 
+        except Exception as e:
             self.print_logs(f'Exception in get_product_tags: {e}')
             if self.DEBUG: print(f'Exception in get_product_tags: {e}')
             else: pass
@@ -838,13 +766,10 @@ class Luxottica_Shopify:
     def add_new_product(self, new_product_title: str, product: Product, brand: Brand, shopify_processor: Shopify_Processor) -> None:
         try:
             # add this product as new to the store
-            # print('Adding product ', new_product_title)
+            print('Adding product ', new_product_title)
             # inserting new product to the shopify store
-            # product_description = self.get_product_description_from_template(description_template, product)
-            product_description = self.create_product_description(brand, product)
+            product_description = self.create_product_description(brand, product)            
             store = self.query_processor.get_store_against_product_id(product.id)
-            # title_tag = self.get_title_tag(brand, product)
-            # description_tag = self.get_description_tag(brand, product)
             meta_title = self.create_product_meta_title(brand, product)
             meta_description = self.create_product_meta_description(brand, product)
             image_description = self.create_product_image_description(brand, product)
@@ -856,7 +781,7 @@ class Luxottica_Shopify:
                 self.query_processor.update_variant_shopify_id(variant.shopify_id, variant.id)
                 self.query_processor.update_variant_inventory_item_id(variant.inventory_item_id, variant.id)
             self.new_products.append(product)
-        except Exception as e: 
+        except Exception as e:
             self.print_logs(f'Exception in add_new_product: {e}')
             if self.DEBUG: print(f'Exception in add_new_product: {e}')
             else: pass
@@ -1196,14 +1121,11 @@ class Luxottica_Shopify:
             if matched_index != -1:
                 if str(variant.title).strip():
                     if len(product.variants) == 1:
-                        if 'Default Title' != str(shopify_product['variants'][matched_index]['title']).strip():
+                        if 'Default Title' != shopify_product['variants'][matched_index]['title']:
                             if not shopify_processor.update_variant_title(variant.shopify_id, 'Default Title', new_product_title):
                                 print(f'Failed to update variant title of product: {new_product_title}')
                     else:    
-                        if str(variant.title).strip() != str(shopify_product['variants'][matched_index]['title']).strip():
-                            # print(matched_index, str(variant.title).strip(), str(shopify_product['variants'][matched_index]['title']).strip())
-                            # print(variant.shopify_id, shopify_product['variants'][matched_index])
-                            # input('can i ')
+                        if variant.title != shopify_product['variants'][matched_index]['title']:
                             if not shopify_processor.update_variant_title(variant.shopify_id, str(variant.title).strip(), new_product_title):
                                 print(f'Failed to update variant title of product: {new_product_title}')
 
@@ -1224,8 +1146,8 @@ class Luxottica_Shopify:
                     if not shopify_processor.update_variant_barcode(variant.shopify_id, str(variant.barcode_or_gtin).strip(), new_product_title):
                         print(f'Failed to update variant barcode of product: {new_product_title}')
             else:
-                print(f'{new_product_title} {variant.title} not matched with any')
-        except Exception as e: 
+                print(f'{variant.title} not matched with any')
+        except Exception as e:
             self.print_logs(f'Exception in check_product_variant: {e}')
             if self.DEBUG: print(f'Exception in check_product_variant: {e}')
             else: pass
@@ -1244,12 +1166,11 @@ class Luxottica_Shopify:
             again_shopify_product = shopify_processor.get_product_from_shopify(product.shopify_id)
             for shopify_variant in again_shopify_product['product']['variants']:
                 for v in product.variants:
-                    if str(v.sku).strip() == str(shopify_variant['sku']).strip() and str(v.title).strip() != str(shopify_variant['title']).strip():
-                        
-                        if not shopify_processor.update_variant_title(v.shopify_id, str(v.title).strip(), new_product_title):
-                            print(f'Failed to update variant title of product: {new_product_title}')
-                        break
-            
+                    if str(v.shopify_id).strip() == str(shopify_variant['id']).strip():
+                        if str(v.title).strip() != str(shopify_variant['title']).strip():
+                            if not shopify_processor.update_variant_title(v.shopify_id, str(v.title).strip(), new_product_title):
+                                print(f'Failed to update variant title of product: {new_product_title}')
+
             if len(product.variants) > 1 and again_shopify_product['product']['options']:
                 for option in again_shopify_product['product']['options']:
                     if option['name'] == 'Title':

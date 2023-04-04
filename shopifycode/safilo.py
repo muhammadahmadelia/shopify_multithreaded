@@ -9,7 +9,7 @@ import json
 import base64
 from urllib.parse import quote
 from modules.query_processor import Query_Processor
-from shopify.shopify_processor import Shopify_Processor
+from shopifycode.shopify_processor import Shopify_Processor
 
 class Safilo_Shopify:
     def __init__(self, DEBUG: bool, config_file: str, query_processor: Query_Processor, logs_filename: str) -> None:
@@ -34,70 +34,86 @@ class Safilo_Shopify:
             for brand in brands:
                 print(f'Brand: {brand.name} | No. of Products: {len(brand.products)}')
 
+                products_count = shopify_processor.get_count_of_products_by_vendor(brand.name)
                 shopify_products = shopify_processor.get_products_by_vendor(brand.name)
+
                 self.printProgressBar(0, len(brand.products), prefix = 'Progress:', suffix = 'Complete', length = 50)
                 
-                for product_index, product in enumerate(brand.products):
-                    # get product title
-                    new_product_title = self.create_product_title(brand, product)
+                if products_count == len(shopify_products):
+                    for product_index, product in enumerate(brand.products):
+                        # get product title
+                        new_product_title = self.create_product_title(brand, product)
 
-                    if product.shopify_id:
-                        shopify_product = self.get_matched_product(product.shopify_id, shopify_products)
-                        
-                        if shopify_product and 'Outlet' not in shopify_product['tags']:
-                            # if self.DEBUG: print(new_product_title)
+                        if product.shopify_id:
+                            shopify_product = self.get_matched_product(product.shopify_id, shopify_products)
                             
-                            self.check_product_title(new_product_title, product, shopify_product, shopify_processor)
-                            self.check_product_description(brand, product, shopify_product, shopify_processor)
-                            self.check_product_status(product, shopify_product, shopify_processor)
-                            self.check_product_type(product, shopify_product, shopify_processor)
-                            self.check_product_tags(brand, product, shopify_product, shopify_processor)
+                            if shopify_product and 'Outlet' not in shopify_product['tags']:
+                                # if self.DEBUG: print(new_product_title)
+                                
+                                # self.check_product_title(new_product_title, product, shopify_product, shopify_processor)
+                                # self.check_product_description(brand, product, shopify_product, shopify_processor)
+                                # self.check_product_status(product, shopify_product, shopify_processor)
+                                # self.check_product_type(product, shopify_product, shopify_processor)
+                                # self.check_product_tags(brand, product, shopify_product, shopify_processor)
 
-                            
-                            # check if database product has 360 images for product
-                            if product.metafields.img_360_urls:
-                                # check if the total number of 360 images of shopify product is less than total number of 360 images in database
-                                if len(shopify_product['images']) < len(product.metafields.img_360_urls):
-                                    # add 360 images to the shopify product
-                                    self.add_product_360_images(shopify_product, product, new_product_title, shopify_processor)
+                                
+                                # check if database product has 360 images for product
+                                # if product.metafields.img_360_urls:
+                                #     # check if the total number of 360 images of shopify product is less than total number of 360 images in database
+                                #     if len(shopify_product['images']) < len(product.metafields.img_360_urls):
+                                #         # add 360 images to the shopify product
+                                #         self.add_product_360_images(shopify_product, product, new_product_title, shopify_processor)
 
-                                self.check_product_360_images_tag(product, shopify_product, shopify_processor)
+                                #     self.check_product_360_images_tag(product, shopify_product, shopify_processor)
 
-                            elif not shopify_product['image'] and str(product.metafields.img_url).strip():
-                                self.add_product_image(product, new_product_title, shopify_processor)
+                                # elif not shopify_product['image'] and str(product.metafields.img_url).strip():
+                                #     self.add_product_image(product, new_product_title, shopify_processor)
 
-                            image_description = self.create_product_image_description(brand, product)
-                            if image_description: 
-                                self.check_product_images_alt_text(image_description, new_product_title, shopify_product, shopify_processor)
+                                # image_description = self.create_product_image_description(brand, product)
+                                # if image_description: 
+                                #     self.check_product_images_alt_text(image_description, new_product_title, shopify_product, shopify_processor)
 
-                            self.check_product_options(product, shopify_product, shopify_processor)
+                                # self.check_product_options(product, shopify_product, shopify_processor)
 
-                            shopify_metafields = shopify_processor.get_product_metafields_from_shopify(product.shopify_id)
-                            if shopify_metafields:
-                                self.check_product_metafields(new_product_title, brand, product, shopify_metafields, shopify_processor)
+                                # shopify_metafields = shopify_processor.get_product_metafields_from_shopify(product.shopify_id)
+                                # if shopify_metafields:
+                                #     self.check_product_metafields(new_product_title, brand, product, shopify_metafields, shopify_processor)
+                                # else:
+                                #     self.add_product_metafeilds(product, shopify_processor)
+
+                                # shopify_italian_metafields = shopify_processor.get_product_italian_metafields_from_shopify(product.shopify_id)
+                                # if shopify_italian_metafields:
+                                #     self.check_product_italian_metafields(new_product_title, product, shopify_metafields, shopify_processor)
+                                # else:
+                                #     self.add_product_italian_metafeilds(product, shopify_processor)
+                                
+                                for variant in product.variants:
+                                    if variant.shopify_id: self.check_product_variant(new_product_title, variant, product, shopify_product, shopify_processor)
+                                    # else: 
+                                        # self.add_new_variant(variant, product, new_product_title, shopify_processor)
+                                        
+                                        # shopify_metafields = shopify_processor.get_product_metafields_from_shopify(product.shopify_id)
+                                        # if shopify_metafields:
+                                        #     self.check_product_metafields(new_product_title, brand, product, shopify_metafields, shopify_processor)
+                                        # else:
+                                        #     self.add_product_metafeilds(product, shopify_processor)
+
+                                        # shopify_italian_metafields = shopify_processor.get_product_italian_metafields_from_shopify(product.shopify_id)
+                                        # if shopify_italian_metafields:
+                                        #     self.check_product_italian_metafields(new_product_title, product, shopify_metafields, shopify_processor)
+                                        # else:
+                                        #     self.add_product_italian_metafeilds(product, shopify_processor)
+                                
                             else:
-                                self.add_product_metafeilds(product, shopify_processor)
+                                if shopify_product: 
+                                    self.print_logs(f'Outlet tag found for {new_product_title}')
+                                else:
+                                    # this product is deleted from the store
+                                    self.print_logs(f'{new_product_title} product not found on shopify store')
+                        # else:
+                            # self.add_new_product(new_product_title, product, brand, shopify_processor)
 
-                            shopify_italian_metafields = shopify_processor.get_product_italian_metafields_from_shopify(product.shopify_id)
-                            if shopify_italian_metafields:
-                                self.check_product_italian_metafields(new_product_title, product, shopify_metafields, shopify_processor)
-                            else:
-                                self.add_product_italian_metafeilds(product, shopify_processor)
-                            
-                            for variant in product.variants:
-                                if variant.shopify_id: self.check_product_variant(new_product_title, variant, product, shopify_product, shopify_processor)
-                                else: 
-                                    self.add_new_variant(variant, product, new_product_title, shopify_processor)
-                        else:
-                            if shopify_product: 
-                                self.print_logs(f'Outlet tag found for {new_product_title}')
-                            else:
-                                # this product is deleted from the store
-                                self.print_logs(f'{new_product_title} product not found on shopify store')
-                    else:
-                        self.add_new_product(new_product_title, product, brand, shopify_processor)
-
-                    self.printProgressBar(product_index + 1, len(brand.products), prefix = 'Progress:', suffix = 'Complete', length = 50)
+                        self.printProgressBar(product_index + 1, len(brand.products), prefix = 'Progress:', suffix = 'Complete', length = 50)
 
         except Exception as e:
             if self.DEBUG: print(f'Exception in Safilo_Shopify controller: {e}')
@@ -1177,6 +1193,7 @@ class Safilo_Shopify:
                 for option in again_shopify_product['product']['options']:
                     if option['name'] == 'Title':
                         shopify_processor.update_product_options(option['product_id'], option['id'], 'Size')
+        
         except Exception as e:
             if self.DEBUG: print(f'Exception in add_new_variant: {e}')
             self.print_logs(f'Exception in add_new_variant: {e}')

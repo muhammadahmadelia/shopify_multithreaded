@@ -27,12 +27,12 @@ from database.keringeyewear import Keringeyewear_Database
 from database.rudyproject import Rudyproject_Database
 from database.luxottica import Luxottica_Database
 
-from shopify.digitalhub import Digitalhub_Shopify
-from shopify.safilo import Safilo_Shopify
-from shopify.keringeyewear import Keringeyewear_Shopify
-from shopify.rudyproject import Rudyproject_Shopify
-from shopify.luxottica import Luxottica_Shopify
-
+from shopifycode.digitalhub import Digitalhub_Shopify
+from shopifycode.safilo import Safilo_Shopify
+from shopifycode.keringeyewear import Keringeyewear_Shopify
+from shopifycode.rudyproject import Rudyproject_Shopify
+from shopifycode.luxottica import Luxottica_Shopify
+from shopifycode.shopify_updater import Shopify_Updater
 
 class Controller:
     def __init__(self, DEBUG: bool, path: str) -> None:
@@ -101,37 +101,37 @@ class Controller:
 
                         print('\n')
 
-                        if self.store.id == 1: Digitalhub_Scraper(self.DEBUG, self.result_filename, self.logs_filename).controller(self.store, selected_brands_and_types)
-                        elif self.store.id == 2: Safilo_Scraper(self.DEBUG, self.result_filename, self.logs_filename).controller(self.store, selected_brands_and_types)
-                        elif self.store.id == 3: Keringeyewear_Scraper(self.DEBUG, self.result_filename, self.logs_filename).controller(self.store, selected_brands_and_types)
-                        elif self.store.id == 4: Rudyproject_Scraper(self.DEBUG, self.result_filename, self.logs_filename).controller(self.store, selected_brands_and_types)
-                        elif self.store.id == 5: Luxottica_Scraper(self.DEBUG, self.result_filename, self.logs_filename).controller(self.store, selected_brands_and_types)
+                        # if self.store.id == 1: Digitalhub_Scraper(self.DEBUG, self.result_filename, self.logs_filename).controller(self.store, selected_brands_and_types)
+                        # elif self.store.id == 2: Safilo_Scraper(self.DEBUG, self.result_filename, self.logs_filename).controller(self.store, selected_brands_and_types)
+                        # elif self.store.id == 3: Keringeyewear_Scraper(self.DEBUG, self.result_filename, self.logs_filename).controller(self.store, selected_brands_and_types)
+                        # elif self.store.id == 4: Rudyproject_Scraper(self.DEBUG, self.result_filename, self.logs_filename).controller(self.store, selected_brands_and_types)
+                        # elif self.store.id == 5: Luxottica_Scraper(self.DEBUG, self.result_filename, self.logs_filename).controller(self.store, selected_brands_and_types)
 
-                        self.read_data_from_json_file(self.store.brands)
+                        # self.read_data_from_json_file(self.store.brands)
 
-                        if self.store.id == 1: Digitalhub_Database(self.DEBUG, self.logs_filename).controller(self.store, query_processor)
-                        if self.store.id == 2: Safilo_Database(self.DEBUG, self.logs_filename).controller(self.store, query_processor)
-                        if self.store.id == 3: Keringeyewear_Database(self.DEBUG, self.logs_filename).controller(self.store, query_processor)
-                        if self.store.id == 4: Rudyproject_Database(self.DEBUG, self.logs_filename).controller(self.store, query_processor)
-                        if self.store.id == 5: Luxottica_Database(self.DEBUG, self.logs_filename).controller(self.store, query_processor)
+                        # if self.store.id == 1: Digitalhub_Database(self.DEBUG, self.logs_filename).controller(self.store, query_processor)
+                        # if self.store.id == 2: Safilo_Database(self.DEBUG, self.logs_filename).controller(self.store, query_processor)
+                        # if self.store.id == 3: Keringeyewear_Database(self.DEBUG, self.logs_filename).controller(self.store, query_processor)
+                        # if self.store.id == 4: Rudyproject_Database(self.DEBUG, self.logs_filename).controller(self.store, query_processor)
+                        # if self.store.id == 5: Luxottica_Database(self.DEBUG, self.logs_filename).controller(self.store, query_processor)
 
-                        self.empty_brand_products(self.store)
-                        self.update_brand_inventory(self.store, query_processor)
+                        # self.empty_brand_products(self.store)
+                        # self.update_brand_inventory(self.store, query_processor)
 
                         self.get_all_products_for_brands(self.store, selected_brands_and_types, query_processor)
                         
-                        shopify_obj = None
-                        if self.store.id == 1: shopify_obj = Digitalhub_Shopify(self.DEBUG, self.config_file, query_processor, self.logs_filename)
+                        # shopify_obj = Shopify_Updater(self.DEBUG, self.store, self.config_file, query_processor, self.logs_filename)
+                        # if self.store.id == 1: shopify_obj = Digitalhub_Shopify(self.DEBUG, self.config_file, query_processor, self.logs_filename)
                         if self.store.id == 2: shopify_obj = Safilo_Shopify(self.DEBUG, self.config_file, query_processor, self.logs_filename)
-                        if self.store.id == 3: shopify_obj = Keringeyewear_Shopify(self.DEBUG, self.config_file, query_processor, self.logs_filename)
-                        if self.store.id == 4: shopify_obj = Rudyproject_Shopify(self.DEBUG, self.config_file, query_processor, self.logs_filename)
-                        if self.store.id == 5: shopify_obj = Luxottica_Shopify(self.DEBUG, self.config_file, query_processor, self.logs_filename)
+                        # if self.store.id == 3: shopify_obj = Keringeyewear_Shopify(self.DEBUG, self.config_file, query_processor, self.logs_filename)
+                        # if self.store.id == 4: shopify_obj = Rudyproject_Shopify(self.DEBUG, self.config_file, query_processor, self.logs_filename)
+                        # if self.store.id == 5: shopify_obj = Luxottica_Shopify(self.DEBUG, self.config_file, query_processor, self.logs_filename)
                         
                         shopify_obj.controller(self.store.brands)
 
-                        if shopify_obj.new_products: self.handle_new_products(shopify_obj, query_processor)
-                        if shopify_obj.new_variants: self.handle_new_variants(shopify_obj, query_processor)
-                        self.handle_found_and_not_found_products(self.store, shopify_obj, query_processor)
+                        # if shopify_obj.new_products: self.handle_new_products(shopify_obj, query_processor)
+                        # if shopify_obj.new_variants: self.handle_new_variants(shopify_obj, query_processor)
+                        # self.handle_found_and_not_found_products(self.store, shopify_obj, query_processor)
 
                 
                 else: print('No store selected to scrape')
@@ -141,6 +141,7 @@ class Controller:
             else: pass
 
         # create logs filename
+    
     def create_logs_filename(self) -> None:
         try:
             scrape_time = datetime.now().strftime('%d-%m-%Y %H-%M-%S')
@@ -380,67 +381,67 @@ class Controller:
             if self.DEBUG: print(f'Exception in get_all_products_for_brands: {e}')
             else: pass
     
-        # handle new created products and create excel file for them
-    def handle_new_products(self, shopify_obj: Luxottica_Shopify, query_processor: Query_Processor) -> None:
-        try:
-            data = []
-            for new_product in shopify_obj.new_products:
-                brand = query_processor.get_brand_by_id(new_product.brand_id)
-                title = shopify_obj.create_product_title(brand, new_product)
-                for new_variant in new_product.variants:
-                    data.append([title, brand.name, new_product.type, new_variant.sku, new_variant.listing_price, new_variant.inventory_quantity])
-            if data:
-                columns = ['Title', 'Vendor', 'Product Type', 'Variant SKU', 'Price', 'Inventory Quantity']
-                filename = 'New Products.xlsx'
-                self.create_excel_file(data, columns, filename)
-        except Exception as e:
-            self.print_logs(f'Exception in handle_new_products: {str(e)}')
-            if self.DEBUG: print(f'Exception in handle_new_products: {e}')
-            else: pass
+    # # handle new created products and create excel file for them
+    # def handle_new_products(self, shopify_obj: Luxottica_Shopify, query_processor: Query_Processor) -> None:
+    #     try:
+    #         data = []
+    #         for new_product in shopify_obj.new_products:
+    #             brand = query_processor.get_brand_by_id(new_product.brand_id)
+    #             title = shopify_obj.create_product_title(brand, new_product)
+    #             for new_variant in new_product.variants:
+    #                 data.append([title, brand.name, new_product.type, new_variant.sku, new_variant.listing_price, new_variant.inventory_quantity])
+    #         if data:
+    #             columns = ['Title', 'Vendor', 'Product Type', 'Variant SKU', 'Price', 'Inventory Quantity']
+    #             filename = 'New Products.xlsx'
+    #             self.create_excel_file(data, columns, filename)
+    #     except Exception as e:
+    #         self.print_logs(f'Exception in handle_new_products: {str(e)}')
+    #         if self.DEBUG: print(f'Exception in handle_new_products: {e}')
+    #         else: pass
 
-    # handle new created variants and create excel file for them
-    def handle_new_variants(self, shopify_obj: Luxottica_Shopify, query_processor: Query_Processor) -> None:
-        try:
-            data = []
-            for new_variant in shopify_obj.new_variants:
-                product = query_processor.get_product_by_id(new_variant.product_id)
-                brand = query_processor.get_brand_by_id(product.brand_id)
-                title = shopify_obj.create_product_title(brand, product)
-                data.append([title, brand.name, product.type, new_variant.sku, new_variant.listing_price, new_variant.inventory_quantity])
-            if data:
-                columns = ['Title', 'Vendor', 'Product Type', 'Variant SKU', 'Price', 'Inventory Quantity']
-                filename = 'New Variants.xlsx'
-                self.create_excel_file(data, columns, filename)   
-        except Exception as e:
-            self.print_logs(f'Exception in handle_new_variants: {str(e)}')
-            if self.DEBUG: print(f'Exception in handle_new_variants: {e}')
-            else: pass
+    # # handle new created variants and create excel file for them
+    # def handle_new_variants(self, shopify_obj: Luxottica_Shopify, query_processor: Query_Processor) -> None:
+    #     try:
+    #         data = []
+    #         for new_variant in shopify_obj.new_variants:
+    #             product = query_processor.get_product_by_id(new_variant.product_id)
+    #             brand = query_processor.get_brand_by_id(product.brand_id)
+    #             title = shopify_obj.create_product_title(brand, product)
+    #             data.append([title, brand.name, product.type, new_variant.sku, new_variant.listing_price, new_variant.inventory_quantity])
+    #         if data:
+    #             columns = ['Title', 'Vendor', 'Product Type', 'Variant SKU', 'Price', 'Inventory Quantity']
+    #             filename = 'New Variants.xlsx'
+    #             self.create_excel_file(data, columns, filename)   
+    #     except Exception as e:
+    #         self.print_logs(f'Exception in handle_new_variants: {str(e)}')
+    #         if self.DEBUG: print(f'Exception in handle_new_variants: {e}')
+    #         else: pass
 
-    # handle found and not found products and create excel file for them
-    def handle_found_and_not_found_products(self, store: Store, shopify_obj: Luxottica_Shopify, query_processor: Query_Processor) -> None:
-        try:
-            for brand in store.brands:
-                not_found_products = []
-                found_products = []
-                created_time = datetime.now().strftime('%d-%m-%Y')
-                for product in query_processor.get_products_by_brand_id_and_created_time(brand.id, created_time):
-                    title = shopify_obj.create_product_title(brand, product)
-                    for variant in query_processor.get_variants_by_product_id_and_created_time(product.id, created_time):
-                        if variant.found_status == 0: not_found_products.append([title, brand.name, product.type, variant.sku, variant.listing_price, variant.inventory_quantity])
-                        else: found_products.append([title, brand.name, product.type, variant.sku, variant.listing_price, variant.inventory_quantity])
+    # # handle found and not found products and create excel file for them
+    # def handle_found_and_not_found_products(self, store: Store, shopify_obj: Luxottica_Shopify, query_processor: Query_Processor) -> None:
+    #     try:
+    #         for brand in store.brands:
+    #             not_found_products = []
+    #             found_products = []
+    #             created_time = datetime.now().strftime('%d-%m-%Y')
+    #             for product in query_processor.get_products_by_brand_id_and_created_time(brand.id, created_time):
+    #                 title = shopify_obj.create_product_title(brand, product)
+    #                 for variant in query_processor.get_variants_by_product_id_and_created_time(product.id, created_time):
+    #                     if variant.found_status == 0: not_found_products.append([title, brand.name, product.type, variant.sku, variant.listing_price, variant.inventory_quantity])
+    #                     else: found_products.append([title, brand.name, product.type, variant.sku, variant.listing_price, variant.inventory_quantity])
 
-                if found_products:
-                    columns = ['Title', 'Vendor', 'Product Type', 'Variant SKU', 'Price', 'Inventory Quantity']
-                    filename = 'Found Products.xlsx'
-                    self.create_excel_file(found_products, columns, filename)
-                if not_found_products:
-                    columns = ['Title', 'Vendor', 'Product Type', 'Variant SKU', 'Price', 'Inventory Quantity']
-                    filename = 'Not found Products.xlsx'
-                    self.create_excel_file(not_found_products, columns, filename)
-        except Exception as e:
-            self.print_logs(f'Exception in handle_found_and_not_found_products: {str(e)}')
-            if self.DEBUG: print(f'Exception in handle_found_and_not_found_products: {e}')
-            else: pass
+    #             if found_products:
+    #                 columns = ['Title', 'Vendor', 'Product Type', 'Variant SKU', 'Price', 'Inventory Quantity']
+    #                 filename = 'Found Products.xlsx'
+    #                 self.create_excel_file(found_products, columns, filename)
+    #             if not_found_products:
+    #                 columns = ['Title', 'Vendor', 'Product Type', 'Variant SKU', 'Price', 'Inventory Quantity']
+    #                 filename = 'Not found Products.xlsx'
+    #                 self.create_excel_file(not_found_products, columns, filename)
+    #     except Exception as e:
+    #         self.print_logs(f'Exception in handle_found_and_not_found_products: {str(e)}')
+    #         if self.DEBUG: print(f'Exception in handle_found_and_not_found_products: {e}')
+    #         else: pass
 
     # create excel file with provided data and columns
     def create_excel_file(self, data: list[str], columns: list[str], filename: str) -> None:

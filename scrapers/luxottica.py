@@ -66,69 +66,77 @@ class Luxottica_Scraper:
                 sleep(10)
                 for brand_with_type in brands_with_types:
                         brand: Brand = brand_with_type['brand']
+                        brand_url: str = self.get_brand_url(brand)
                         print(f'Brand: {brand.name}')
 
-                        for glasses_type_index, glasses_type in enumerate(brand_with_type['types']):
-                            if glasses_type_index != 0: 
-                                self.browser.get('https://my.essilorluxottica.com/myl-it/en-GB/homepage')
-                            
-                            brand_url = self.select_category(brand, glasses_type, store.username, store.password)
-                            if brand_url:
-                                total_products = self.get_total_products_for_brand()
-                            
-                                print(f'Total products found: {total_products} | Type: {glasses_type}')
+                        if brand_url:
+                            for glasses_type_index, glasses_type in enumerate(brand_with_type['types']):
+                                # if glasses_type_index != 0: 
+                                #     self.browser.get('https://my.essilorluxottica.com/myl-it/en-GB/homepage')
+                                
+                                self.browser.get(brand_url)
+                                self.wait_until_browsing()
+                                sleep(5)
 
-                                if int(total_products) > 0:
-                                    page_number = 1
-                                    scraped_products = 0
-                                    start_time = datetime.now()
-                                    print(f'Start Time: {start_time.strftime("%A, %d %b %Y %I:%M:%S %p")}')
-                                    
-                                    self.printProgressBar(0, int(total_products), prefix = 'Progress:', suffix = 'Complete', length = 50)
+                                if self.select_category(glasses_type):
+                                    category_url = str(self.browser.current_url).strip()
+                                    total_products = self.get_total_products_for_brand()
+                                
+                                    print(f'Total products found: {total_products} | Type: {glasses_type}')
 
-                                    while int(scraped_products) != int(total_products):
-                                        for product_div in self.get_product_divs_on_page():
-                                            try:
-                                                ActionChains(self.browser).move_to_element(product_div.find_element(By.CSS_SELECTOR, 'div[class^="Tile__SeeAllContainer"] > div > button')).perform()
+                                    if int(total_products) > 0:
+                                        page_number = 1
+                                        scraped_products = 0
+                                        start_time = datetime.now()
+                                        print(f'Start Time: {start_time.strftime("%A, %d %b %Y %I:%M:%S %p")}')
+                                        
+                                        self.printProgressBar(0, int(total_products), prefix = 'Progress:', suffix = 'Complete', length = 50)
 
-                                                scraped_products += 1
-                                                url = str(product_div.find_element(By.CSS_SELECTOR, 'a[class^="Tile__ImageContainer"]').get_attribute('href'))
-                                                identifier = str(url).split('/')[-1].strip()
-                                                if not cookies: cookies = self.get_cookies_from_browser(identifier)
+                                        while int(scraped_products) != int(total_products):
+                                            for product_div in self.get_product_divs_on_page():
+                                                try:
+                                                    ActionChains(self.browser).move_to_element(product_div.find_element(By.CSS_SELECTOR, 'div[class^="Tile__SeeAllContainer"] > div > button')).perform()
 
-                                                headers = self.get_headers(cookies, url, dtPC)
-                                                tokenValue = self.get_tokenValue(identifier, headers)
-                                                parentCatalogEntryID = self.get_parentCatalogEntryID(tokenValue, headers)
-                                                variants = self.get_all_variants_data(parentCatalogEntryID, headers)
+                                                    scraped_products += 1
+                                                    url = str(product_div.find_element(By.CSS_SELECTOR, 'a[class^="Tile__ImageContainer"]').get_attribute('href'))
+                                                    identifier = str(url).split('/')[-1].strip()
+                                                    if not cookies: cookies = self.get_cookies_from_browser(identifier)
 
-                                                for variant in variants:
-                                                    self.create_thread(variant, brand,  glasses_type, headers, tokenValue)
-                                                    
-                                            except Exception as e:
-                                                if self.DEBUG: print(f'Exception in loop: {e}')
-                                                self.print_logs(f'Exception in loop: {e}')
+                                                    headers = self.get_headers(cookies, url, dtPC)
+                                                    tokenValue = self.get_tokenValue(identifier, headers)
+                                                    if tokenValue:
+                                                        parentCatalogEntryID = self.get_parentCatalogEntryID(tokenValue, headers)
+                                                        if parentCatalogEntryID:
+                                                            variants = self.get_all_variants_data(parentCatalogEntryID, headers)
 
-                                            if self.thread_counter >= 50: 
-                                                self.wait_for_thread_list_to_complete()
-                                                self.save_to_json(self.data)
-                                            self.printProgressBar(scraped_products, int(total_products), prefix = 'Progress:', suffix = 'Complete', length = 50)
-                                            
-                                            
-                                        if int(scraped_products) < int(total_products):
-                                            page_number += 1
-                                            self.move_to_next_page(brand_url, page_number)
-                                            self.wait_until_element_found(40, 'css_selector', 'div[class^="PLPTitle__Section"] > p[class^="CustomText__Text"]')
-                                            total_products = self.get_total_products_for_brand()
-                                        else: break
-                                    
-                                    self.wait_for_thread_list_to_complete()
-                                    self.save_to_json(self.data)
+                                                            for variant in variants:
+                                                                self.create_thread(variant, brand,  glasses_type, headers, tokenValue)
+                                                        
+                                                except Exception as e:
+                                                    if self.DEBUG: print(f'Exception in loop: {e}')
+                                                    self.print_logs(f'Exception in loop: {e}')
 
-                                    end_time = datetime.now()
-                                    
-                                    print(f'End Time: {end_time.strftime("%A, %d %b %Y %I:%M:%S %p")}')
-                                    print('Duration: {}\n'.format(end_time - start_time))
-                            else: print(f'Cannot find {glasses_type} for {brand.name}')
+                                                if self.thread_counter >= 50: 
+                                                    self.wait_for_thread_list_to_complete()
+                                                    self.save_to_json(self.data)
+                                                self.printProgressBar(scraped_products, int(total_products), prefix = 'Progress:', suffix = 'Complete', length = 50)
+                                                
+                                                
+                                            if int(scraped_products) < int(total_products):
+                                                page_number += 1
+                                                self.move_to_next_page(category_url, page_number)
+                                                self.wait_until_element_found(40, 'css_selector', 'div[class^="PLPTitle__Section"] > p[class^="CustomText__Text"]')
+                                                total_products = self.get_total_products_for_brand()
+                                            else: break
+                                        
+                                        self.wait_for_thread_list_to_complete()
+                                        self.save_to_json(self.data)
+
+                                        end_time = datetime.now()
+                                        
+                                        print(f'End Time: {end_time.strftime("%A, %d %b %Y %I:%M:%S %p")}')
+                                        print('Duration: {}\n'.format(end_time - start_time))
+                                else: print(f'Cannot find {glasses_type} for {brand.name}')
             else: print(f'Failed to login \nURL: {store.link}\nUsername: {str(store.username)}\nPassword: {str(store.password)}')
         except Exception as e:
             if self.DEBUG: print(f'Exception in Luxottica_All_Scraper controller: {e}')
@@ -243,69 +251,129 @@ class Luxottica_Scraper:
         self.browser.switch_to.window(self.browser.window_handles[len(self.browser.window_handles) - 1])
         self.wait_until_browsing()
     
-    def select_category(self, brand: Brand, glasses_type: str, username: str, password: str) -> str:
-        brand_url = ''
-        for _ in range(0, 10):
-            try:
-                url = self.get_brand_url(brand)
-                if url:
-                    # if url and self.browser.current_url == 'https://my.essilorluxottica.com/myl-it/en-GB/homepage' or 'https://my.essilorluxottica.com/myl-it/en-GB/plp/frames' in self.browser.current_url:
-                    #     self.wait_until_element_found(30, 'xpath', "//span/button[contains(text(),'BRANDS')]")
-                    #     ActionChains(self.browser).move_to_element(self.browser.find_element(By.XPATH, "//span/button[contains(text(),'BRANDS')]")).perform()
-                    #     sleep(0.5)
-                    #     self.browser.get(url)
-                    #     self.wait_until_browsing()
-                    #     sleep(5)
+    def select_category(self, glasses_type: str) -> bool:
+        category_found = False
+        try:
+            category_css_selector = ''
+            if glasses_type == 'Sunglasses': category_css_selector = 'button[data-element-id^="Categories_sunglasses_"]'
+            elif glasses_type == 'Sunglasses Kids': category_css_selector = 'button[data-element-id^="Categories_sunglasses-kids"]'
+            elif glasses_type == 'Eyeglasses': category_css_selector = 'button[data-element-id^="Categories_eyeglasses_"]'
+            elif glasses_type == 'Eyeglasses Kids': category_css_selector = 'button[data-element-id^="Categories_eyeglasses-kids"]'
+            elif glasses_type == 'Ski & Snowboard Goggles': category_css_selector = 'button[data-element-id^="Categories_gogglesHelmets"]'
+            
+            if self.wait_until_element_found(30, 'css_selector', category_css_selector):
+                category_found = True
 
-                    if '/login' in self.browser.current_url:
-                        for _ in range(0, 30):
-                            try:
-                                if self.wait_until_element_found(5, 'xpath', '//input[@name="username"]'):
-                                    self.browser.find_element(By.XPATH, '//input[@name="username"]')
-                                    if self.login(username, password):
-                                        sleep(10)
-                                        break
-                                    else: sleep(0.4)
-                                elif self.wait_until_element_found(5, 'xpath', 'button[data-element-id^="Categories_sunglasses_ViewAll"]'): break
-                            except: sleep(0.5)
-                    else:
-                        self.wait_until_element_found(30, 'xpath', "//span/button[contains(text(),'BRANDS')]")
-                        ActionChains(self.browser).move_to_element(self.browser.find_element(By.XPATH, "//span/button[contains(text(),'BRANDS')]")).perform()
+                for _ in range(0, 100):
+                    element = None
+                    try:
+                        element = self.browser.find_element(By.CSS_SELECTOR, category_css_selector)
+                        ActionChains(self.browser).move_to_element(element).perform()
                         sleep(0.5)
-                        self.browser.get(url)
-                        self.wait_until_browsing()
-                        sleep(5)
-
-                    # print(self.browser.current_url, url, self.browser.current_url == url)
-                    if self.browser.current_url == url:
-                        category_css_selector = ''
-                        if glasses_type == 'Sunglasses': category_css_selector = 'button[data-element-id^="Categories_sunglasses_"]'
-                        elif glasses_type == 'Sunglasses Kids': category_css_selector = 'button[data-element-id^="Categories_sunglasses-kids"]'
-                        elif glasses_type == 'Eyeglasses': category_css_selector = 'button[data-element-id^="Categories_eyeglasses_"]'
-                        elif glasses_type == 'Eyeglasses Kids': category_css_selector = 'button[data-element-id^="Categories_eyeglasses-kids"]'
-                        elif glasses_type == 'Ski & Snowboard Goggles': category_css_selector = 'button[data-element-id^="Categories_gogglesHelmets"]'
-                        
-                        if self.wait_until_element_found(20, 'css_selector', category_css_selector):
-                            element = self.browser.find_element(By.CSS_SELECTOR, category_css_selector)
-                            ActionChains(self.browser).move_to_element(element).perform()
+                        ActionChains(self.browser).move_to_element(element).click().perform()
+                        sleep(0.4)
+                    except: 
+                        try:
+                            self.browser.execute_script("arguments[0].scrollIntoView();", element)
                             sleep(0.5)
-                            ActionChains(self.browser).move_to_element(element).click().perform()
+                            element.click()
                             sleep(0.4)
+                        except: sleep(0.4)
 
-                            for _ in range(0, 100):
-                                try:
-                                    value = str(self.browser.find_element(By.CSS_SELECTOR, 'div[class^="PLPTitle__Section"] > p[class^="CustomText__Text"]').text).strip()
-                                    if '(' in value or ')' in value: break
-                                except: sleep(0.5)
+                    if 'frames?PRODUCT_CATEGORY_FILTER=' in self.browser.current_url: break
+                    else: sleep(0.23)
+                
+                for _ in range(0, 100):
+                    try:
+                        value = str(self.browser.find_element(By.CSS_SELECTOR, 'div[class^="PLPTitle__Section"] > p[class^="CustomText__Text"]').text).strip()
+                        if '(' in value or ')' in value: break
+                    except: sleep(0.5)
 
-                            brand_url = self.browser.current_url
-                            break
-                        else: break
-                else: break
-            except Exception as e:
-                if self.DEBUG: print(f'Exception in select_category: {e}')
-                self.print_logs(f'Exception in select_category: {e}')
-        return brand_url
+        except Exception as e:
+            if self.DEBUG: print(f'Exception in select_category: {e}')
+            self.print_logs((f'Exception in select_category: {e}'))
+        finally: return category_found
+        
+    # def select_category(self, brand: Brand, glasses_type: str, username: str, password: str) -> str:
+    #     brand_url = ''
+    #     for _ in range(0, 10):
+    #         try:
+    #             url = self.get_brand_url(brand)
+    #             if url:
+    #                 # if url and self.browser.current_url == 'https://my.essilorluxottica.com/myl-it/en-GB/homepage' or 'https://my.essilorluxottica.com/myl-it/en-GB/plp/frames' in self.browser.current_url:
+    #                 #     self.wait_until_element_found(30, 'xpath', "//span/button[contains(text(),'BRANDS')]")
+    #                 #     ActionChains(self.browser).move_to_element(self.browser.find_element(By.XPATH, "//span/button[contains(text(),'BRANDS')]")).perform()
+    #                 #     sleep(0.5)
+    #                 #     self.browser.get(url)
+    #                 #     self.wait_until_browsing()
+    #                 #     sleep(5)
+
+    #                 if '/login' in self.browser.current_url:
+    #                     for _ in range(0, 30):
+    #                         try:
+    #                             if self.wait_until_element_found(5, 'xpath', '//input[@name="username"]'):
+    #                                 self.browser.find_element(By.XPATH, '//input[@name="username"]')
+    #                                 if self.login(username, password):
+    #                                     sleep(10)
+    #                                     break
+    #                                 else: sleep(0.4)
+    #                             elif self.wait_until_element_found(5, 'xpath', 'button[data-element-id^="Categories_sunglasses_ViewAll"]'): break
+    #                         except: sleep(0.5)
+    #                 else:
+    #                     self.wait_until_element_found(30, 'xpath', "//span/button[contains(text(),'BRANDS')]")
+    #                     ActionChains(self.browser).move_to_element(self.browser.find_element(By.XPATH, "//span/button[contains(text(),'BRANDS')]")).perform()
+    #                     sleep(0.5)
+    #                     self.browser.get(url)
+    #                     for _ in range(0, 50):
+    #                         try:
+    #                             if self.browser.current_url == url: break
+    #                             else: sleep(0.5)
+    #                         except: sleep(0.5)
+    #                     # self.wait_until_browsing()
+    #                     # sleep(5)
+
+    #                 # print(self.browser.current_url, url, self.browser.current_url == url)
+    #                 if self.browser.current_url == url:
+    #                     category_css_selector = ''
+    #                     if glasses_type == 'Sunglasses': category_css_selector = 'button[data-element-id^="Categories_sunglasses_"]'
+    #                     elif glasses_type == 'Sunglasses Kids': category_css_selector = 'button[data-element-id^="Categories_sunglasses-kids"]'
+    #                     elif glasses_type == 'Eyeglasses': category_css_selector = 'button[data-element-id^="Categories_eyeglasses_"]'
+    #                     elif glasses_type == 'Eyeglasses Kids': category_css_selector = 'button[data-element-id^="Categories_eyeglasses-kids"]'
+    #                     elif glasses_type == 'Ski & Snowboard Goggles': category_css_selector = 'button[data-element-id^="Categories_gogglesHelmets"]'
+                        
+    #                     if self.wait_until_element_found(20, 'css_selector', category_css_selector):
+    #                         for _ in range(0, 100):
+    #                             element = None
+    #                             try:
+    #                                 element = self.browser.find_element(By.CSS_SELECTOR, category_css_selector)
+    #                                 ActionChains(self.browser).move_to_element(element).perform()
+    #                                 sleep(0.5)
+    #                                 ActionChains(self.browser).move_to_element(element).click().perform()
+    #                                 sleep(0.4)
+    #                             except: 
+    #                                 try:
+    #                                     self.browser.execute_script("arguments[0].scrollIntoView();", element)
+    #                                     sleep(0.5)
+    #                                     element.click()
+    #                                     sleep(0.4)
+    #                                 except: sleep(0.4)
+
+    #                             if 'frames?PRODUCT_CATEGORY_FILTER=' in self.browser.current_url: break
+    #                             else: sleep(0.23)
+    #                         for _ in range(0, 100):
+    #                             try:
+    #                                 value = str(self.browser.find_element(By.CSS_SELECTOR, 'div[class^="PLPTitle__Section"] > p[class^="CustomText__Text"]').text).strip()
+    #                                 if '(' in value or ')' in value: break
+    #                             except: sleep(0.5)
+
+    #                         brand_url = self.browser.current_url
+    #                         break
+    #                     else: break
+    #             else: break
+    #         except Exception as e:
+    #             if self.DEBUG: print(f'Exception in select_category: {e}')
+    #             self.print_logs(f'Exception in select_category: {e}')
+    #     return brand_url
 
     def get_brand_url(self, brand: Brand) -> str:
         url = ''
@@ -414,8 +482,8 @@ class Luxottica_Scraper:
                     sleep(0.3)
             self.browser.find_element(By.CSS_SELECTOR, 'div[class="icon-container"] > div[class^="IconButton__Container"] > button').click()
         except Exception as e:
-            if self.DEBUG: print(f'Exception in get_variants: {str(e)}')
-            self.print_logs(f'Exception in get_variants: {str(e)}')
+            if self.DEBUG: print(f'Exception in get_all_variants: {str(e)}')
+            self.print_logs(f'Exception in get_all_variants: {str(e)}')
         finally: return variants
 
     def get_variants_data(self):
@@ -685,7 +753,8 @@ class Luxottica_Scraper:
             product.brand_id = brand.id
             product.url = f'https://my.essilorluxottica.com/myl-it/en-GB/pdp/{str(varinat["partNumber"]).replace(" ", "+").replace("_", "-").replace("/", "-").lower()}'
             product.number = str(varinat['partNumber']).strip().split('_')[0].strip()[1:]
-            product.name = str(varinat['name']).strip()
+            if str(varinat['name']).strip().upper != str(product.number).strip().upper():
+                product.name = str(varinat['name']).strip()
             product.frame_code = str(varinat['partNumber']).strip().split('_')[-1].strip()
             product.status = 'active'
             product.type = str(glasses_type).strip().title()
@@ -695,46 +764,47 @@ class Luxottica_Scraper:
             metafields = Metafields()
            
             properties = self.get_product_variants(varinat['uniqueID'], headers)
-            product.frame_color = properties['frame_color'] 
-            product.lens_color = properties['lens_color'] 
-            metafields.for_who = properties['for_who'] 
-            metafields.lens_material = properties['lens_material'] 
-            metafields.frame_shape = properties['frame_shape'] 
-            metafields.frame_material = properties['frame_material'] 
-            metafields.lens_technology = properties['lens_technology']
-            metafields.img_url = properties['img_url']
-            
-            
-            sizes = properties['sizes']
+            if properties:
+                product.frame_color = properties['frame_color'] 
+                product.lens_color = properties['lens_color'] 
+                metafields.for_who = properties['for_who'] 
+                metafields.lens_material = properties['lens_material'] 
+                metafields.frame_shape = properties['frame_shape'] 
+                metafields.frame_material = properties['frame_material'] 
+                metafields.lens_technology = properties['lens_technology']
+                metafields.img_url = properties['img_url']
+                
+                
+                sizes = properties['sizes']
 
-            barcodes, product_sizes = [], []
-            for size in sizes:
-                variant = Variant()
-                variant.title = size['title']
-                variant.sku = f'{product.number} {product.frame_code} {variant.title}'
-                variant.inventory_quantity = size['inventory_quantity']
-                variant.found_status = 1
-                variant.barcode_or_gtin = size['UPC']
-                barcodes.append(size['UPC'])
-                variant.weight = '0.5'
-                variant.size = size['size']
-                product_sizes.append(size['size'])
-                for price in prices:
-                    # variant.wholesale_price = price['wholesale_price']
-                    variant.listing_price = price['listing_price']
-                product.variants = variant
+                barcodes, product_sizes = [], []
+                for size in sizes:
+                    variant = Variant()
+                    variant.title = size['title']
+                    variant.sku = f'{product.number} {product.frame_code} {variant.title}'
+                    variant.inventory_quantity = size['inventory_quantity']
+                    variant.found_status = 1
+                    variant.barcode_or_gtin = size['UPC']
+                    barcodes.append(size['UPC'])
+                    variant.weight = '0.5'
+                    variant.size = size['size']
+                    product_sizes.append(size['size'])
+                    for price in prices:
+                        # variant.wholesale_price = price['wholesale_price']
+                        variant.listing_price = price['listing_price']
+                    product.variants = variant
 
-            metafields.product_size = ', '.join(product_sizes)
-            metafields.gtin1 = ', '.join(barcodes)
+                metafields.product_size = ', '.join(product_sizes)
+                metafields.gtin1 = ', '.join(barcodes)
 
 
-            for image360 in self.get_360_images(varinat['uniqueID'], headers):
-                if image360 not in metafields.img_360_urls:
-                    metafields.img_360_urls = image360
+                for image360 in self.get_360_images(varinat['uniqueID'], headers):
+                    if image360 not in metafields.img_360_urls:
+                        metafields.img_360_urls = image360
+                
+                product.metafields = metafields
             
-            product.metafields = metafields
-            
-            self.data.append(product)
+                self.data.append(product)
         except Exception as e:
             if self.DEBUG: print(f'Exception in get_variants: {e}')
             self.print_logs(f'Exception in get_variants: {e}')
@@ -760,8 +830,8 @@ class Luxottica_Scraper:
         tokenValue = ''
         try:
             url = f'https://my.essilorluxottica.com/fo-bff/api/priv/v1/myl-it/en-GB/pages/identifier/{identifier}'
-            response = requests.get(url=url, headers=headers)
-            if response.status_code == 200:
+            response = self.get_response(url, headers)
+            if response and response.status_code == 200:
                 json_data = json.loads(response.text)
                 if 'contents' in json_data['data']:
                     id = str(int(json_data['data']['contents'][0]['id']))
@@ -777,8 +847,8 @@ class Luxottica_Scraper:
         parentCatalogEntryID = ''
         try:
             url = f'https://my.essilorluxottica.com/fo-bff/api/priv/v1/myl-it/en-GB/products/variants/{tokenValue}'
-            response = requests.get(url=url, headers=headers)
-            if response.status_code == 200:
+            response = self.get_response(url, headers)
+            if response and response.status_code == 200:
                 json_data = json.loads(response.text)
                 parentCatalogEntryID = json_data['data']['catalogEntryView'][0]['parentCatalogEntryID']
             else: print(f'Status code: {response.status_code} for parentCatalogEntryID')
@@ -791,8 +861,8 @@ class Luxottica_Scraper:
         variants = []
         try:
             url = f'https://my.essilorluxottica.com/fo-bff/api/priv/v1/myl-it/en-GB/products/{parentCatalogEntryID}/variants'
-            response = requests.get(url=url, headers=headers)
-            if response.status_code == 200:
+            response = self.get_response(url, headers)
+            if response and response.status_code == 200:
                 json_data = json.loads(response.text)
                 # print(json_data['data']['catalogEntryView'])
                 for index, variant in enumerate(json_data['data']['catalogEntryView'][0]['variants']):
@@ -833,8 +903,8 @@ class Luxottica_Scraper:
         properties = {}
         try:
             url = f'https://my.essilorluxottica.com/fo-bff/api/priv/v1/myl-it/en-GB/products/variants/{uniqueID}'
-            response = requests.get(url=url, headers= headers)
-            if response.status_code == 200:
+            response = self.get_response(url, headers)
+            if response and response.status_code == 200:
                 json_data = json.loads(response.text)
                 frame_color, lens_color, for_who, lens_material, frame_shape, frame_material, lens_technology = '', '', '', '', '', '', ''
                 img_url = f"{str(json_data['data']['catalogEntryView'][0]['fullImage']).strip()}?impolicy=MYL_EYE&wid=600"
@@ -897,8 +967,16 @@ class Luxottica_Scraper:
                     for size_without_q in sizes_without_q:
                         if productId == size_without_q['uniqueID']:
                             inventory_quantity = 0
-                            if json_res['inventoryStatus'] == 'Available': inventory_quantity = 1
-                            sizes.append({'title': size_without_q['title'], 'inventory_quantity': inventory_quantity, "UPC": size_without_q['UPC'], "size": size_without_q['size']})
+                            # if json_res['inventoryStatus'] == 'Available': inventory_quantity = 1
+                            if int(float(json_res['availableQuantity'])) > 0: inventory_quantity = 1
+                            sizes.append(
+                                {
+                                    'title': size_without_q['title'], 
+                                    'inventory_quantity': inventory_quantity, 
+                                    "UPC": size_without_q['UPC'], 
+                                    "size": size_without_q['size']
+                                }
+                            )
                 
                 properties = {
                     'img_url': img_url,
@@ -920,10 +998,9 @@ class Luxottica_Scraper:
     def check_availability(self, payload: str, headers: dict) -> list[dict]:
         json_data = {}
         try:
-            
             url = f'https://my.essilorluxottica.com/fo-bff/api/priv/v1/myl-it/en-GB/products/availability?productId={payload}'
-            response = requests.get(url=url, headers=headers)
-            if response.status_code == 200:
+            response = self.get_response(url, headers)
+            if response and response.status_code == 200:
                 json_data = json.loads(response.text)
                 json_data = json_data['data']
                 json_data = json_data['doorInventoryAvailability'][0]['inventoryAvailability']
@@ -935,21 +1012,16 @@ class Luxottica_Scraper:
     def get_360_images(self, tokenValue: str, headers: dict) -> list[str]:
         image_360_urls = []
         try:
-            counter = 0
-            while True:
-                counter += 1
-                url = f'https://my.essilorluxottica.com/fo-bff/api/priv/v1/myl-it/en-GB/products/variants/{tokenValue}/attachments?type=PHOTO_360'
-                response = requests.get(url=url, headers= headers)
-                if response.status_code == 200:
-                    json_data = json.loads(response.text)
-                    if 'attachments' in json_data['data']['catalogEntryView'][0]:
-                        for attachment in json_data['data']['catalogEntryView'][0]['attachments']:
-                            image_360_url = str(attachment['attachmentAssetPath']).strip()
-                            # if '?impolicy=MYL_EYE&wid=688' not in image_360_url:
-                            #     image_360_url = f'{image_360_url}?impolicy=MYL_EYE&wid=688'
-                            image_360_urls.append(image_360_url)
-                    break
-                if counter == 3: break
+            url = f'https://my.essilorluxottica.com/fo-bff/api/priv/v1/myl-it/en-GB/products/variants/{tokenValue}/attachments?type=PHOTO_360'
+            response = self.get_response(url, headers)
+            if response and response.status_code == 200:
+                json_data = json.loads(response.text)
+                if 'attachments' in json_data['data']['catalogEntryView'][0]:
+                    for attachment in json_data['data']['catalogEntryView'][0]['attachments']:
+                        image_360_url = str(attachment['attachmentAssetPath']).strip()
+                        # if '?impolicy=MYL_EYE&wid=688' not in image_360_url:
+                        #     image_360_url = f'{image_360_url}?impolicy=MYL_EYE&wid=688'
+                        image_360_urls.append(image_360_url)
         except Exception as e:
             if self.DEBUG: print(f'Exception in get_360_images: {e}')
             self.print_logs(f'Exception in get_360_images: {e}')
@@ -959,8 +1031,8 @@ class Luxottica_Scraper:
         images = []
         try:
             url = f'https://my.essilorluxottica.com/fo-bff/api/priv/v1/myl-it/en-GB/products/variants/{tokenValue}/attachments?type=PHOTO'
-            response = requests.get(url=url, headers= headers)
-            if response.status_code == 200:
+            response = self.get_response(url, headers)
+            if response and response.status_code == 200:
                 json_data = json.loads(response.text)
                 for attachment in json_data['data']['catalogEntryView'][0]['attachments']:
                     images.append(f"{attachment['attachmentAssetPath']}?impolicy=MYL_EYE&wid=834")
@@ -973,8 +1045,8 @@ class Luxottica_Scraper:
         prices = []
         try:
             url = f'https://my.essilorluxottica.com/fo-bff/api/priv/v1/myl-it/en-GB/products/prices?productId={tokenValue}'
-            response = requests.get(url=url, headers= headers)
-            if response.status_code == 200:
+            response = self.get_response(url, headers)
+            if response and response.status_code == 200:
                 json_data = json.loads(response.text)
                 for data in json_data['data']:
                     wholesale_price, listing_price = '', ''
@@ -987,6 +1059,18 @@ class Luxottica_Scraper:
             if self.DEBUG: print(f'Exception in get_prices: {e}')
             self.print_logs(f'Exception in get_prices: {e}')
         finally: return prices
+
+    def get_response(self, url: str, headers: dict):
+        response = None
+        for _ in range(0, 20):
+            try:
+                response = requests.get(url=url, headers=headers, timeout=25)
+                if response.status_code == 200: break
+                else: 
+                    self.print_logs(f'{_} {response.status_code} for {url}')
+                    sleep(1)
+            except: sleep(0.8)
+        return response
 
     def printProgressBar(self, iteration, total, prefix = '', suffix = '', decimals = 1, length = 100, fill = '█', printEnd = "\r"):
         """

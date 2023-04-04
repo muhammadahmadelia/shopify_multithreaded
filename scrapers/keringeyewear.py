@@ -245,7 +245,8 @@ class Keringeyewear_Scraper:
 
     def load_all_products(self) -> None:
         total_products, found_products = 0, 0
-        while True:
+        can_i_quit = False
+        while not can_i_quit:
             try:
                 if total_products == 0:
                     try: total_products = int(str(self.browser.find_element(By.CSS_SELECTOR, 'div[class*="col-md-11 kering-gray"]').text).strip().split(' ')[0])
@@ -263,9 +264,25 @@ class Keringeyewear_Scraper:
                         # button.click()
                         self.browser.find_element(By.XPATH, '//div[@class="col-md-12 show-more-button"]').click()
                         # self.wait_until_browsing()
-                        self.wait_until_loading()
+                        # self.wait_until_loading()
+                        counter = 0
+                        while True:
+                            try:
+                                new_found_products = len(self.browser.find_elements(By.XPATH, '//div[@class="product-item space purchasable-plp set-border "]'))
+                                if int(new_found_products) > int(found_products): break
+                                else:
+                                    if counter == 5:
+                                        response = str(input('Can i quit? ')).strip()
+                                        if response.lower() == 'y': 
+                                            can_i_quit = True
+                                            break
+                                    sleep(1)
+                                    counter += 1
+                            except: sleep(1)
                         sleep(0.8)
                     else: break
+
+
             except: pass
 
     def get_product_data(self, product_number: str, soup: BeautifulSoup) -> list[dict]:
@@ -460,7 +477,7 @@ class Keringeyewear_Scraper:
         try:
             for _ in range(0, 10):
                 try:
-                    response = requests.get(url=url, headers=headers)
+                    response = requests.get(url=url, headers=headers, timeout=25)
                     if response.status_code == 200: break
                 except: sleep(0.1)
         except Exception as e:

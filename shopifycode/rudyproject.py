@@ -10,7 +10,7 @@ import base64
 from urllib.parse import quote
 from PIL import Image
 from modules.query_processor import Query_Processor
-from shopify.shopify_processor import Shopify_Processor
+from shopifycode.shopify_processor import Shopify_Processor
 
 class Rudyproject_Shopify:
     def __init__(self, DEBUG: bool, config_file: str, query_processor: Query_Processor, logs_filename: str) -> None:
@@ -49,47 +49,60 @@ class Rudyproject_Shopify:
                         shopify_product = self.get_matched_product(product.shopify_id, shopify_products)
                         
                         if shopify_product and 'Outlet' not in shopify_product['tags']:
-                            self.check_product_title(new_product_title, product, shopify_product, shopify_processor)
-                            self.check_product_description(brand, product, shopify_product, shopify_processor)
-                            self.check_product_status(product, shopify_product, shopify_processor)
-                            self.check_product_type(product, shopify_product, shopify_processor)
-                            self.check_product_tags(brand, product, shopify_product, shopify_processor)
+                            # self.check_product_title(new_product_title, product, shopify_product, shopify_processor)
+                            # self.check_product_description(brand, product, shopify_product, shopify_processor)
+                            # self.check_product_status(product, shopify_product, shopify_processor)
+                            # self.check_product_type(product, shopify_product, shopify_processor)
+                            # self.check_product_tags(brand, product, shopify_product, shopify_processor)
 
-                            # check if database product has 360 images for product
-                            if product.metafields.img_360_urls:
-                                # check if the total number of 360 images of shopify product is less than total number of 360 images in database
-                                if len(shopify_product['images']) < len(product.metafields.img_360_urls):
-                                    # add 360 images to the shopify product
-                                    self.add_product_360_images(shopify_product, product, new_product_title, shopify_processor)
+                            # # check if database product has 360 images for product
+                            # if product.metafields.img_360_urls:
+                            #     # check if the total number of 360 images of shopify product is less than total number of 360 images in database
+                            #     if len(shopify_product['images']) < len(product.metafields.img_360_urls):
+                            #         # add 360 images to the shopify product
+                            #         self.add_product_360_images(shopify_product, product, new_product_title, shopify_processor)
                                 
-                                self.check_product_360_images_tag(product, shopify_product, shopify_processor)
-                                # self.check_product_images_alt_text(brand, product, new_product_title, shopify_product, shopify_processor)
+                            #     self.check_product_360_images_tag(product, shopify_product, shopify_processor)
+                            #     # self.check_product_images_alt_text(brand, product, new_product_title, shopify_product, shopify_processor)
 
-                            elif not shopify_product['image'] and str(product.metafields.img_url).strip():
-                                self.add_product_image(product, new_product_title, shopify_processor)
+                            # elif not shopify_product['image'] and str(product.metafields.img_url).strip():
+                            #     self.add_product_image(product, new_product_title, shopify_processor)
 
-                            image_description = self.create_product_image_description(brand, product)
-                            if image_description: 
-                                self.check_product_images_alt_text(image_description, new_product_title, shopify_product, shopify_processor)
+                            # image_description = self.create_product_image_description(brand, product)
+                            # if image_description: 
+                            #     self.check_product_images_alt_text(image_description, new_product_title, shopify_product, shopify_processor)
                                 
-                            self.check_product_options(product, shopify_product, shopify_processor)
+                            # self.check_product_options(product, shopify_product, shopify_processor)
 
-                            shopify_metafields = shopify_processor.get_product_metafields_from_shopify(product.shopify_id)
-                            if shopify_metafields:
-                                self.check_product_metafields(new_product_title, brand, product, shopify_metafields, shopify_processor)
-                            else:
-                                self.add_product_metafeilds(product, shopify_processor)
+                            # shopify_metafields = shopify_processor.get_product_metafields_from_shopify(product.shopify_id)
+                            # if shopify_metafields:
+                            #     self.check_product_metafields(new_product_title, brand, product, shopify_metafields, shopify_processor)
+                            # else:
+                            #     self.add_product_metafeilds(product, shopify_processor)
 
-                            shopify_italian_metafields = shopify_processor.get_product_italian_metafields_from_shopify(product.shopify_id)
-                            if shopify_italian_metafields:
-                                self.check_product_italian_metafields(new_product_title, product, shopify_metafields, shopify_processor)
-                            else:
-                                self.add_product_italian_metafeilds(product, shopify_processor)
+                            # shopify_italian_metafields = shopify_processor.get_product_italian_metafields_from_shopify(product.shopify_id)
+                            # if shopify_italian_metafields:
+                            #     self.check_product_italian_metafields(new_product_title, product, shopify_metafields, shopify_processor)
+                            # else:
+                            #     self.add_product_italian_metafeilds(product, shopify_processor)
 
                             for variant in product.variants:
                                 if variant.shopify_id: self.check_product_variant(new_product_title, variant, product, shopify_product, shopify_processor)
                                 else: 
                                     self.add_new_variant(variant, product, new_product_title, shopify_processor)
+
+                                    shopify_metafields = shopify_processor.get_product_metafields_from_shopify(product.shopify_id)
+                                    if shopify_metafields:
+                                        self.check_product_metafields(new_product_title, brand, product, shopify_metafields, shopify_processor)
+                                    else:
+                                        self.add_product_metafeilds(product, shopify_processor)
+
+                                    shopify_italian_metafields = shopify_processor.get_product_italian_metafields_from_shopify(product.shopify_id)
+                                    if shopify_italian_metafields:
+                                        self.check_product_italian_metafields(new_product_title, product, shopify_metafields, shopify_processor)
+                                    else:
+                                        self.add_product_italian_metafeilds(product, shopify_processor)
+
 
                         else: 
                             if shopify_product: 

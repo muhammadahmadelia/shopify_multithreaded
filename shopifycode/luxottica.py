@@ -1,29 +1,25 @@
-# import requests
-from re import template
+import os
+import base64
+import requests
+from time import sleep
 from models.brand import Brand
 from models.product import Product
 from models.variant import Variant
 from modules.files_reader import Files_Reader
-from time import sleep
-import json
-import os
-import base64
-from urllib.parse import quote
-from PIL import Image
 from modules.query_processor import Query_Processor
-from shopify.shopify_processor import Shopify_Processor
+from shopifycode.shopify_processor import Shopify_Processor
 
-class Keringeyewear_Shopify:
+class Luxottica_Shopify:
     def __init__(self, DEBUG: bool, config_file: str, query_processor: Query_Processor, logs_filename: str) -> None:
         self.DEBUG: bool = DEBUG
         self.config_file: str = config_file
-        self.template_file_path = 'templates/Keringeyewear/'
+        self.query_processor: Query_Processor = query_processor
+        self.logs_filename: str = logs_filename
+        self.template_file_path = 'templates/Luxottica/'
         self.new_products: list[Product] = []
         self.new_variants: list[Variant] = []
         self.updated_variants: list[Variant] = []
         self.not_found_variants: list[Variant] = []
-        self.query_processor = query_processor
-        self.logs_filename = logs_filename
         pass
 
     def controller(self, brands: list[Brand]) -> None:
@@ -34,77 +30,78 @@ class Keringeyewear_Shopify:
             print('Updating Shopify for')
             
             for brand in brands:
-                print(f'Brand: {brand.name} | No. of Products: {len(brand.products)}')
+                print(f'Brand: {brand.name}')
+                print(f'No. of Products in database: {len(brand.products)}')
+
+                products_count = shopify_processor.get_count_of_products_by_vendor(brand.name)
+                print(f'No. of Products in shopify: {products_count}')
+
+                self.printProgressBar(0, len(brand.products), prefix = 'Progress:', suffix = 'Complete', length = 50)
 
                 shopify_products = shopify_processor.get_products_by_vendor(brand.name)
-                self.printProgressBar(0, len(brand.products), prefix = 'Progress:', suffix = 'Complete', length = 50)
-                
-                for product_index, product in enumerate(brand.products):
-                    
-                    # get product title
-                    new_product_title = self.create_product_title(brand, product)
-            
-                    if product.shopify_id:
-                        # shopify_product = self.get_product_from_shopify(product.shopify_id)
-                        shopify_product = self.get_matched_product(product.shopify_id, shopify_products)
+                if products_count == len(shopify_products):
+                    for product_index, product in enumerate(brand.products):
+                        # get product title
+                        new_product_title = self.create_product_title(brand, product)
                         
-                        if shopify_product and 'Outlet' not in shopify_product['tags']:
-                            # if self.DEBUG: print(new_product_title)
-
-                            self.check_product_title(new_product_title, product, shopify_product, shopify_processor)
-                            self.check_product_description(brand, product, shopify_product, shopify_processor)
-                            self.check_product_status(product, shopify_product, shopify_processor)
-                            self.check_product_type(product, shopify_product, shopify_processor)
-                            self.check_product_tags(brand, product, shopify_product, shopify_processor)
-
-                            # check if database product has 360 images for product
-                            if product.metafields.img_360_urls:
-                                # check if the total number of 360 images of shopify product is less than total number of 360 images in database
-                                if len(shopify_product['images']) < len(product.metafields.img_360_urls):
-                                    # add 360 images to the shopify product
-                                    self.add_product_360_images(shopify_product, product, new_product_title, shopify_processor)
-
-                                self.check_product_360_images_tag(product, shopify_product, shopify_processor)
+                        if product.shopify_id:
+                            shopify_product = self.get_matched_product(product.shopify_id, shopify_products)
                             
-                            elif not shopify_product['image'] and str(product.metafields.img_url).strip():
-                                self.add_product_image(product, new_product_title, shopify_processor)
                             
-                            image_description = self.create_product_image_description(brand, product)
-                            if image_description: 
-                                self.check_product_images_alt_text(image_description, new_product_title, shopify_product, shopify_processor)
+                            if shopify_product and 'Outlet' not in shopify_product['tags']:
+                                if self.DEBUG: print(new_product_title)
 
-                            self.check_product_options(product, shopify_product, shopify_processor)
+                                # self.check_product_title(new_product_title, product, shopify_product, shopify_processor)
+                                # self.check_product_description(brand, product, shopify_product, shopify_processor)
+                                # self.check_product_status(product, shopify_product, shopify_processor)
+                                # self.check_product_type(product, shopify_product, shopify_processor)
+                                # self.check_product_tags(brand, product, shopify_product, shopify_processor)
                             
-                            shopify_metafields = shopify_processor.get_product_metafields_from_shopify(product.shopify_id)
-                            if shopify_metafields:
-                                self.check_product_metafields(new_product_title, brand, product, shopify_metafields, shopify_processor)
-                            else:
-                                self.add_product_metafeilds(product, shopify_processor)
+                                image_description = self.create_product_image_description(brand, product)
+                                # # check if database product has 360 images for product
+                                if product.metafields.img_360_urls and len(shopify_product['images']) == 0:
+                                    # check if the total number of 360 images of shopify product is less than total number of 360 images in database
+                                    # if  < len(product.metafields.img_360_urls):
+                                    #     self.delete_product_images(shopify_product, shopify_processor)
+                                    #     # add 360 images to the shopify product
+                                    #     self.add_product_360_images(product, image_description, shopify_processor)
+                                    self.add_product_360_images(product, image_description, shopify_processor)
+                                    self.check_product_360_images_tag(product, shopify_product, shopify_processor)
+                                elif not shopify_product['image'] and str(product.metafields.img_url).strip():
+                                    self.add_product_image(product, new_product_title, shopify_processor)
+                                
+                                
+                                if image_description: 
+                                    self.check_product_images_alt_text(image_description, new_product_title, shopify_product, shopify_processor)
 
-                            shopify_italian_metafields = shopify_processor.get_product_italian_metafields_from_shopify(product.shopify_id)
-                            if shopify_italian_metafields:
-                                self.check_product_italian_metafields(new_product_title, product, shopify_metafields, shopify_processor)
-                            else:
-                                self.add_product_italian_metafeilds(product, shopify_processor)
-                           
-                            for variant in product.variants:
-                                if variant.shopify_id: self.check_product_variant(new_product_title, variant, product, shopify_product, shopify_processor)
-                                else: 
-                                    self.add_new_variant(variant, product, new_product_title, shopify_processor)
+                                self.check_product_options(product, shopify_product, shopify_processor)
+                                
+                                shopify_metafields = shopify_processor.get_product_metafields_from_shopify(product.shopify_id)
+                                if shopify_metafields:
+                                    self.check_product_metafields(new_product_title, brand, product, shopify_metafields, shopify_processor)
+                                else:
+                                    new_metafields = self.get_new_product_metafeilds(product)
+                                    for new_metafield in new_metafields: 
+                                        shopify_processor.set_metafields_for_product(product.shopify_id, new_metafield)
+
+                                for variant in product.variants:
+                                    if  not variant.shopify_id: self.add_new_variant(variant, product, new_product_title, shopify_processor)
+                                    else: self.check_product_variant(new_product_title, variant, product, shopify_product, shopify_processor)
+                                        
+                            else: 
+                                if shopify_product: 
+                                    self.print_logs(f'Outlet tag found for {new_product_title}')
+                                else:
+                                    # this product is deleted from the store
+                                    self.print_logs(f'{new_product_title} product not found on shopify store')
                         
-                        else: 
-                            if shopify_product: 
-                                self.print_logs(f'Outlet tag found for {new_product_title}')
-                            else:
-                                # this product is deleted from the store
-                                self.print_logs(f'{new_product_title} product not found on shopify store')
-                    else:
-                        self.add_new_product(new_product_title, product, brand, shopify_processor)
+                        else:
+                            self.add_new_product(new_product_title, product, brand, shopify_processor)
 
-                    self.printProgressBar(product_index + 1, len(brand.products), prefix = 'Progress:', suffix = 'Complete', length = 50)
-        except Exception as e:
-            self.print_logs(f'Exception in Keringeyewear_Shopify controller: {e}')
-            if self.DEBUG: print(f'Exception in Keringeyewear_Shopify controller: {e}')
+                        self.printProgressBar(product_index + 1, len(brand.products), prefix = 'Progress:', suffix = 'Complete', length = 50)
+        except Exception as e: 
+            self.print_logs(f'Exception in Luxottica_Shopify controller: {e}')
+            if self.DEBUG: print(f'Exception in Luxottica_Shopify controller: {e}')
             else: pass
 
     # get product template path 
@@ -220,8 +217,8 @@ class Keringeyewear_Shopify:
             if self.DEBUG: print(f'Exception in get_original_text: {e}')
             else: pass
         finally: return template
-
-    # create product title
+    
+    # check product title and update it if not matched
     def create_product_title(self, brand: Brand, product: Product) -> str:
         title = ''
         try:
@@ -235,6 +232,7 @@ class Keringeyewear_Shopify:
                 if str(product.name).strip(): title += f' {str(product.name).strip().upper()}'
                 if str(product.number).strip(): title += f' {str(product.number).strip().upper()}'
                 if str(product.frame_code).strip(): title += f' {str(product.frame_code).strip().upper()}'
+
                 # if str(brand.name).strip(): title += f'{str(brand.name).strip().title()} '
                 # if str(product.number).strip(): title += f'{str(product.number).strip().upper()} '
                 # if str(product.name).strip(): title += f'{str(product.name).strip().upper()} '
@@ -244,7 +242,17 @@ class Keringeyewear_Shopify:
                 title = str(title).strip()
                 if '  ' in title: title = str(title).strip().replace('  ', ' ')
                 if str(title).strip()[-1] == '-': title = str(title)[:-1].strip()
-        except Exception as e:
+
+                # y = title.split(' ')
+                # counter = 0
+                # for i in range(0, len(y)-1):
+                #     if str(product.number).strip().upper() == str(y[i]).strip():
+                #         counter += 1
+                #         if counter == 2:
+                #             del y[i]
+                #             break
+                # title = ' '.join(y)
+        except Exception as e: 
             self.print_logs(f'Exception in create_product_title: {e}')
             if self.DEBUG: print(f'Exception in create_product_title: {e}')
             else: pass
@@ -313,194 +321,38 @@ class Keringeyewear_Shopify:
                 if str(product['id']).strip() == shopify_id:
                     shopify_product = product
                     break
-        except Exception as e:
+        except Exception as e: 
             self.print_logs(f'Exception in get_matched_product: {e}')
             if self.DEBUG: print(f'Exception in get_matched_product: {e}')
             else: pass
         finally: return shopify_product
 
-    # check product title and update it if not matched
-    def check_product_title(self, new_product_title: str, product: Product, shopify_product: dict, shopify_processor: Shopify_Processor) -> None:
+    # get product description template
+    def get_product_description_from_template(self, description_template: str, product: Product) -> str:
+        product_description = ''
         try:
-            # update product title if shopify product title is not equal to database product title
-            if str(new_product_title).strip() != str(shopify_product['title']).strip():
-                if  not shopify_processor.update_product_title(product.shopify_id, new_product_title):
-                    print(f'Failed to update product title\n Old Product Title: {shopify_product["title"]}\nNew Product Title: {new_product_title}')
-        except Exception as e:
-            self.print_logs(f'Excepption in check_product_title: {e}')
-            if self.DEBUG: print(f'Excepption in check_product_title: {e}')
-            else: pass
+            product_description = str(description_template).strip().replace('{product.number}', str(product.number).strip().upper()).strip()
 
-    # check product description of shopify product and update it if not matched
-    def check_product_description(self, brand: Brand, product: Product, shopify_product: dict, shopify_processor: Shopify_Processor) -> None:
-        try:
-            product_description_template_path = self.get_template_path('Product Description', brand, product)
-            product_description_template = self.get_template(product_description_template_path)
-            if product_description_template:
-                product_description = self.get_original_text(product_description_template, brand, product)
-
-                # update product status if shopify product status is not equal to database product status
-                if str(product_description).strip() != str(shopify_product['body_html']).strip():
-                    if not shopify_processor.update_product_body_html(product.shopify_id, str(product_description).strip()):
-                        print(f'Failed to update product description\n Old Product Description: {shopify_product["body_html"]}\nNew Product Description: {str(product_description).strip()}')
-        except Exception as e:
-            self.print_logs(f'Excepption in check_product_description: {e}')
-            if self.DEBUG: print(f'Excepption in check_product_description: {e}')
-            else: pass
-
-    # check product status of shopify product and update it if not matched
-    def check_product_status(self, product: Product, shopify_product: dict, shopify_processor: Shopify_Processor) -> None:
-        try:
-            # update product status if shopify product status is not equal to database product status
-            if str(product.status).strip() != str(shopify_product['status']).strip():
-                if not shopify_processor.update_product_status(product.shopify_id, str(product.status).strip()):
-                    print(f'Failed to update product status\n Old Product Status: {shopify_product["status"]}\nNew Product Status: {str(product.status).strip()}')
-        except Exception as e:
-            self.print_logs(f'Excepption in check_product_status: {e}')
-            if self.DEBUG: print(f'Excepption in check_product_status: {e}')
-            else: pass
-
-    # check product type of shopify product and update it if not matched
-    def check_product_type(self, product: Product, shopify_product: dict, shopify_processor: Shopify_Processor) -> None:
-        try:
-            # update product type if shopify product type is not equal to database product type
-            if str(product.type).strip() != str(shopify_product['product_type']).strip():
-                if not shopify_processor.update_product_type(product.shopify_id, str(product.type).strip()):
-                    print(f'Failed to update product type\n Old Product Type: {shopify_product["product_type"]}\nNew Product Type: {str(product.type).strip()}')
-        except Exception as e:
-            self.print_logs(f'Excepption in check_product_type: {e}')
-            if self.DEBUG: print(f'Excepption in check_product_type: {e}')
-            else: pass
-
-    # check product tags of shopify product and update them if not matched
-    def check_product_tags(self, brand: Brand, product: Product, shopify_product: dict, shopify_processor: Shopify_Processor) -> None:
-        try:
-            # update product tags
-            shopify_product_tags_list = str(shopify_product['tags']).strip().split(', ')
-            tags = self.get_product_tags(brand, product, shopify_product_tags_list)
-            if tags:
-                new_tags = f"{str(shopify_product['tags']).strip()}, {tags}"
-                if not shopify_processor.update_product_tags(product.shopify_id, new_tags):
-                    print(f'Failed to update product type\n Old Product Tags: {shopify_product["tags"]}\nNew Product Tags: {new_tags}')
-        except Exception as e:
-            self.print_logs(f'Excepption in check_product_tags: {e}')
-            if self.DEBUG: print(f'Excepption in check_product_tags: {e}')
-            else: pass
-
-    # add 360 images to the product on shopify
-    def add_product_360_images(self, shopify_product: dict, product: Product, new_product_title: str, shopify_processor: Shopify_Processor) -> None:
-        try:
+            if str(product.name).strip(): product_description = str(product_description).strip().replace('{product.name}', str(product.name).strip().upper()).strip()
+            else: product_description = str(product_description).strip().replace(' {product.name}', '').strip()
             
-            images_downloaded = []
-            # first download all the images
-            for index, image_360_url in enumerate(product.metafields.img_360_urls):
-                image_filename = ''
-                number = str(product.number).replace('/', '_').replace('-', '_').strip()
-                name = str(product.name).replace('/', '_').replace('-', '_').strip()
-                frame_code = str(product.frame_code).replace('/', '_').replace('-', '_').strip()
-                if product.lens_code:
-                    lens_code = str(product.lens_code).replace('/', '_').replace('-', '_').strip()
-                    image_filename = f'{number}_{name}_{frame_code}_{lens_code}_{index+1}.png'
-                else:
-                    image_filename = f'{number}_{name}_{frame_code}_{index+1}.png'
-                # download image
-                image_attachment = shopify_processor.download_image(image_360_url)
-                
-                if image_attachment:
-                    # save downloaded image
-                    with open(image_filename, 'wb') as f: f.write(image_attachment)
-                    # crop image to the correct size
-                    # shopify_processor.crop_downloaded_image(image_filename)
-                    # add downloaded image name to the list
-                    images_downloaded.append(image_filename)
-
+            product_description = str(product_description).strip().replace('{product.frame_code}', str(product.frame_code).strip().upper()).strip()
             
-            # if total number of images downloaded are more than images on shopify
-            if len(images_downloaded) > len(shopify_product['images']):
-                
-                # first delete all the images of the shopify product
-                for shopify_image in shopify_product['images']:
-                    shopify_processor.delete_product_image(product.shopify_id, shopify_image['id'], new_product_title)
-                
-                for image_downloaded in images_downloaded:
-
-                    f = open(image_downloaded, 'rb')
-                    image_attachment = base64.b64encode(f.read())
-                    f.close()
-
-                    shopify_processor.update_product_image(product.shopify_id, image_attachment, image_downloaded, new_product_title, new_product_title)
+            frame_color = ''
+            if '/' in product.frame_color: frame_color = str(product.frame_color).strip().split('/')[0].strip()
+            else: frame_color = str(product.frame_color).strip()
+            product_description = str(product_description).strip().replace('{product.frame_color}', str(frame_color).strip().lower()).strip()
             
-            # delete all downloaded images
-            for image_downloaded in images_downloaded:
-                os.remove(image_downloaded)
-            
-        except Exception as e:
-            self.print_logs(f'Excepption in add_product_360_images: {e}')
-            if self.DEBUG: print(f'Excepption in add_product_360_images: {e}')
-            else: pass
-
-    # check image 360 tag on the shopify product and if not found add it
-    def check_product_360_images_tag(self, product: Product, shopify_product: dict, shopify_processor: Shopify_Processor) -> None:
-        try:
-            again_shopify_product = shopify_processor.get_product_from_shopify(shopify_product['id'])
-            spin_images = len(again_shopify_product['product']['images'])
-            if int(spin_images) > 1 and f'spinimages={spin_images}' not in str(again_shopify_product['product']['tags']).strip():
-                tags = f"{again_shopify_product['product']['tags']}, spinimages={spin_images}"
-                shopify_processor.update_product_tags(product.shopify_id, tags)
-        except Exception as e:
-            self.print_logs(f'Excepption in check_product_360_images_tag: {e}')
-            if self.DEBUG: print(f'Excepption in check_product_360_images_tag: {e}')
-            else: pass
-
-    # check alt text of images 360 on the shopify product and if not found add it
-    def check_product_images_alt_text(self, image_description: str, new_product_title: str, shopify_product: dict, shopify_processor: Shopify_Processor) -> None:
-        try:
-            if image_description:
-                if shopify_product['images']:
-                    for image in shopify_product['images']:
-                        image_id = str(image['id']).strip()
-                        product_id = str(image['product_id']).strip()
-                        if image_description != str(image['alt']):
-                            shopify_processor.update_product_image_alt_text(product_id, image_id, image_description, new_product_title)
-                else:
-                    if shopify_product['image']:
-                        image = shopify_product['image']
-                        image_id = str(image['id']).strip()
-                        product_id = str(image['product_id']).strip()
-                        if image_description != str(image['alt']):
-                            shopify_processor.update_product_image_alt_text(product_id, image_id, image_description, new_product_title)
+            lens_color = ''
+            if '/' in product.lens_color: lens_color = str(product.lens_color).strip().split('/')[0].strip()
+            else: lens_color = str(product.lens_color).strip()
+            product_description = str(product_description).strip().replace('{product.lens_color}', str(lens_color).strip().lower()).strip()
+            product_description = str(product_description).strip().replace('{product.metafields.for_who}', str(product.metafields.for_who).strip().lower()).strip()
         except Exception as e: 
-            self.print_logs(f'Excepption in check_product_images_alt_text: {e}')
-            if self.DEBUG: print(f'Excepption in check_product_images_alt_text: {e}')
+            self.print_logs(f'Exception in get_product_description_template: {e}')
+            if self.DEBUG: print(f'Exception in get_product_description_template: {e}')
             else: pass
-
-    # add product image to the shopify
-    def add_product_image(self, product: Product, new_product_title: str, shopify_processor: Shopify_Processor) -> None:
-        try:
-            image_attachment = shopify_processor.download_image(str(product.metafields.img_url).strip())
-            if image_attachment:
-                image_attachment = base64.b64encode(image_attachment)
-                filename = f"{str(new_product_title).split('-')[0].strip().lower().replace(' ', '-')}-01.jpg"
-                alt = f"{str(new_product_title).split('-')[0].strip()}"
-                if not shopify_processor.update_product_image(product.shopify_id, image_attachment, filename, new_product_title, new_product_title):
-                    print(f'Failed to update product: {new_product_title} image')
-            else: print(f'Failed to download image for {new_product_title}')
-        except Exception as e:
-            self.print_logs(f'Excepption in add_product_image: {e}')
-            if self.DEBUG: print(f'Excepption in add_product_image: {e}')
-            else: pass
-
-    # check product options and modify them if needed
-    def check_product_options(self, product: Product, shopify_product: dict, shopify_processor: Shopify_Processor) -> None:
-        try:
-            if len(product.variants) > 1 and shopify_product['options']:
-                for option in shopify_product['options']:
-                    if option['name'] == 'Title':
-                        shopify_processor.update_product_options(option['product_id'], option['id'], 'Size')
-        except Exception as e:
-            self.print_logs(f'Excepption in check_product_options: {e}')
-            if self.DEBUG: print(f'Excepption in check_product_options: {e}')
-            else: pass
+        finally: return product_description
 
     # get product title tag
     def get_title_tag(self, brand: Brand, product: Product) -> str:
@@ -508,7 +360,6 @@ class Keringeyewear_Shopify:
         try:
             template_path = f'{self.template_file_path}{brand.name}/{product.type}/meta_title.txt'
             template = self.get_template(template_path)
-            # print(template)
             if template:
                 title_tag = template
                 if '{Brand.Name}' in title_tag: title_tag = str(title_tag).replace('{Brand.Name}', str(brand.name).strip().title()).strip()
@@ -587,13 +438,13 @@ class Keringeyewear_Shopify:
                 if title_tag:
                     title_tag = str(title_tag).replace('  ', ' ').strip()
                     if len(title_tag) > 60: title_tag = str(title_tag).replace('| LookerOnline', '| LO')
-        except Exception as e:
+        except Exception as e: 
             self.print_logs(f'Exception in get_title_tag: {e}')
             if self.DEBUG: print(f'Exception in get_title_tag: {e}')
             else: pass
         finally: return title_tag
 
-    # get product description tag 
+    # get product description tag
     def get_description_tag(self, brand: Brand, product: Product) -> str:
         description_tag = ''
         try:
@@ -677,12 +528,12 @@ class Keringeyewear_Shopify:
                     description_tag = str(description_tag).replace('  ', ' ').replace('âœ“', '✓').strip()
             # description_tag = f'Buy {str(brand.name).strip().title()} {str(product.number).strip().upper()} {str(product.frame_code).strip().upper()} {str(product.name).strip().upper()} {str(product.metafields.for_who).strip().title()} {str(product.type).strip().title()}! ✓ Express WorldWide Shipping ✓ Secure Checkout ✓ 100% Original | LookerOnline |'
             # if '  ' in description_tag: description_tag = str(description_tag).strip().replace('  ', ' ')
-        except Exception as e:
+        except Exception as e: 
             self.print_logs(f'Exception in get_description_tag: {e}')
             if self.DEBUG: print(f'Exception in get_description_tag: {e}')
             else: pass
         finally: return description_tag
-    
+
     # get specific matched metafileds from all metafields of product
     def get_matched_metafiled(self, shopify_metafields: list[dict], metafield_name: str):
         metafield_id = ''
@@ -695,7 +546,7 @@ class Keringeyewear_Shopify:
                     metafield_value = str(shopify_metafield['value']).strip()
                     metafield_found_status = True
                     break
-        except Exception as e:
+        except Exception as e: 
             self.print_logs(f'Exception in get_matched_metafiled: {e}')
             if self.DEBUG: print(f'Exception in get_matched_metafiled: {e}')
             else: pass
@@ -709,21 +560,236 @@ class Keringeyewear_Shopify:
                 if str(shopify_variant['id']).strip() == str(database_variant.shopify_id).strip():
                     matched_index = index
                     break
-        except Exception as e:
+        except Exception as e: 
             self.print_logs(f'Exception in create_product_title: {e}')
             if self.DEBUG: print(f'Exception in create_product_title: {e}')
             else: pass
         finally: return matched_index
 
+    # get product description template path 
+    def get_description_template_path(self, brand: Brand, product: Product) -> str:
+        description_template_path = ''
+        try:
+            description_template_path = f'{self.template_file_path}{brand.name}/{product.type}/product_description.txt'
+        except Exception as e: 
+            self.print_logs(f'Exception in get_description_template_path: {e}')
+            if self.DEBUG: print(f'Exception in get_description_template_path: {e}')
+            else: pass
+        finally: return description_template_path
+    
+    # check product title and update it if not matched
+    def check_product_title(self, new_product_title: str, product: Product, shopify_product: dict, shopify_processor: Shopify_Processor) -> None:
+        try:
+            # update product title if shopify product title is not equal to database product title
+            if str(new_product_title).strip() != str(shopify_product['title']).strip():
+                product_json = { "product": { "id": product.shopify_id, "title": str(new_product_title).strip() } }
+                if not shopify_processor.update_product(product.shopify_id, product_json):
+                    self.print_logs(f'Failed to update product title\n Old Product Title: {shopify_product["title"]}\nNew Product Title: {new_product_title}')
+                # if not shopify_processor.update_product_title(product.shopify_id, new_product_title):
+                #     print(f'Failed to update product title\n Old Product Title: {shopify_product["title"]}\nNew Product Title: {new_product_title}')
+        except Exception as e: 
+            self.print_logs(f'Excepption in check_product_title: {e}')
+            if self.DEBUG: print(f'Excepption in check_product_title: {e}')
+            else: pass
+
+    # check product description of shopify product and update it if not matched
+    def check_product_description(self, brand: Brand, product: Product, shopify_product: dict, shopify_processor: Shopify_Processor) -> None:
+        try:
+            # # check if we have templet for this brand
+            # if str(description_template).strip():
+            #     body_html = self.get_product_description_from_template(description_template, product)
+            product_description_template_path = self.get_template_path('Product Description', brand, product)
+            product_description_template = self.get_template(product_description_template_path)
+            if product_description_template:
+                product_description = self.get_original_text(product_description_template, brand, product)
+
+                # update product status if shopify product status is not equal to database product status
+                if str(product_description).strip() != str(shopify_product['body_html']).strip():
+                    product_json = { "product": { "id": product.shopify_id, "body_html": str(product_description).strip() } }
+                    if not shopify_processor.update_product(product.shopify_id, product_json):
+                        print(f'Failed to update product description\n Old Product Description: {shopify_product["body_html"]}\nNew Product Description: {str(product_description).strip()}')
+                    # if not shopify_processor.update_product_body_html(product.shopify_id, str(product_description).strip()):
+                    #     print(f'Failed to update product description\n Old Product Description: {shopify_product["body_html"]}\nNew Product Description: {str(product_description).strip()}')
+        except Exception as e: 
+            self.print_logs(f'Excepption in check_product_description: {e}')
+            if self.DEBUG: print(f'Excepption in check_product_description: {e}')
+            else: pass
+
+    # check product status of shopify product and update it if not matched
+    def check_product_status(self, product: Product, shopify_product: dict, shopify_processor: Shopify_Processor) -> None:
+        try:
+            # update product status if shopify product status is not equal to database product status
+            if str(product.status).strip() != str(shopify_product['status']).strip():
+                product_json = { "product": { "id": product.shopify_id, "status": str(product.status).strip() } }
+                if not shopify_processor.update_product(product.shopify_id, product_json):
+                    print(f'Failed to update product status\n Old Product Status: {shopify_product["status"]}\nNew Product Status: {str(product.status).strip()}')
+                # if not shopify_processor.update_product_status(product.shopify_id, str(product.status).strip()):
+                #     print(f'Failed to update product status\n Old Product Status: {shopify_product["status"]}\nNew Product Status: {str(product.status).strip()}')
+        except Exception as e: 
+            self.print_logs(f'Excepption in check_product_status: {e}')
+            if self.DEBUG: print(f'Excepption in check_product_status: {e}')
+            else: pass
+
+    # check product type of shopify product and update it if not matched
+    def check_product_type(self, product: Product, shopify_product: dict, shopify_processor: Shopify_Processor) -> None:
+        try:
+            # update product type if shopify product type is not equal to database product type
+            if str(product.type).strip() != str(shopify_product['product_type']).strip():
+                product_json = { "product": { "id": product.shopify_id, "product_type": str(product.type).strip() } }
+                if not shopify_processor.update_product(product.shopify_id, product_json):
+                    print(f'Failed to update product type\n Old Product Type: {shopify_product["product_type"]}\nNew Product Type: {str(product.type).strip()}')
+                # if not shopify_processor.update_product_type(product.shopify_id, str(product.type).strip()):
+                #     print(f'Failed to update product type\n Old Product Type: {shopify_product["product_type"]}\nNew Product Type: {str(product.type).strip()}')
+        except Exception as e: 
+            self.print_logs(f'Excepption in check_product_type: {e}')
+            if self.DEBUG: print(f'Excepption in check_product_type: {e}')
+            else: pass
+
+    # check product tags of shopify product and update them if not matched
+    def check_product_tags(self, brand: Brand, product: Product, shopify_product: dict, shopify_processor: Shopify_Processor) -> None:
+        try:
+            # update product tags
+            shopify_product_tags_list = str(shopify_product['tags']).strip().split(', ')
+            tags = ', '.join(self.get_product_tags(brand, product, shopify_product_tags_list))
+            if tags:
+                new_tags = f"{str(shopify_product['tags']).strip()}, {tags}"
+                product_json = { "product": { "id": product.shopify_id, "tags": str(new_tags).strip() } }
+                if not shopify_processor.update_product(product.shopify_id, product_json):
+                    print(f'Failed to update product type\n Old Product Tags: {shopify_product["tags"]}\nNew Product Tags: {new_tags}')
+                # if not shopify_processor.update_product_tags(product.shopify_id, new_tags):
+                #     print(f'Failed to update product type\n Old Product Tags: {shopify_product["tags"]}\nNew Product Tags: {new_tags}')
+        except Exception as e: 
+            self.print_logs(f'Excepption in check_product_tags: {e}')
+            if self.DEBUG: print(f'Excepption in check_product_tags: {e}')
+            else: pass
+
+    # delete all images from shopify
+    def delete_product_images(self, shopify_product: dict, shopify_processor: Shopify_Processor) -> None:
+        try:
+            for shopify_image in shopify_product['images']:
+                shopify_processor.delete_product_image(shopify_product['id'], shopify_image['id'], shopify_product['title'])
+        except Exception as e:
+            if self.DEBUG: print(f'Exception in delete_product_images: {e}')
+            self.print_logs(f'Exception in delete_product_images: {e}')
+
+    # add 360 images to the product on shopify
+    def add_product_360_images(self, product: Product, image_description: str, shopify_processor: Shopify_Processor) -> None:
+        try:
+            
+            for index, image_360_url in enumerate(product.metafields.img_360_urls):
+                image_filename = ''
+                image_360_url = str(image_360_url).strip()
+                if '?impolicy=MYL_EYE&wid=688' not in image_360_url:
+                    image_360_url = str(image_360_url).replace('?impolicy=MYL_EYE&wid=688', '').strip()
+                    image_filename = image_360_url.split('/')[-1].strip()
+
+                    if '?' in image_filename: image_filename = str(image_filename).split('?')[0].strip()
+                    if image_filename[0] == '0': image_filename = image_filename[1:]
+
+                    if image_filename:
+                        json_value = {"image": {"position": index + 1, "src": image_360_url, "filename": image_filename, "alt": image_description}}
+                        shopify_processor.update_product_image(product.shopify_id, json_value)
+        except Exception as e: 
+            self.print_logs(f'Excepption in add_product_360_images: {e}')
+            if self.DEBUG: print(f'Excepption in add_product_360_images: {e}')
+            else: pass
+
+    # this function will download image from the given url
+    def download_image(self, url: str):
+        image_attachment = ''
+        try:
+            
+            for _ in range(0, 10):
+                try:
+                    response = requests.get(url=url)
+                    if response.status_code == 200:
+                        image_attachment = response.content
+                        break
+                    elif response.status_code == 404: 
+                        self.print_logs(f'404 in downloading this image {url}')
+                        break
+                    else: 
+                        self.print_logs(f'{response.status_code} found for downloading image')
+                        sleep(1)
+                except: pass
+        except Exception as e:
+            if self.DEBUG: print(f'Exception in download_image: {str(e)}')
+            self.print_logs(f'Exception in download_image: {str(e)}')
+        finally: return image_attachment
+
+    # check image 360 tag on the shopify product and if not found add it
+    def check_product_360_images_tag(self, product: Product, shopify_product: dict, shopify_processor: Shopify_Processor) -> None:
+        try:
+            again_shopify_product = shopify_processor.get_product_from_shopify(shopify_product['id'])
+            spin_images = len(again_shopify_product['product']['images'])
+            if int(spin_images) > 1 and f'spinimages={spin_images}' not in str(again_shopify_product['product']['tags']).strip():
+                tags = f"{again_shopify_product['product']['tags']}, spinimages={spin_images}"
+                shopify_processor.update_product_tags(product.shopify_id, tags)
+        except Exception as e: 
+            self.print_logs(f'Excepption in check_product_360_images_tag: {e}')
+            if self.DEBUG: print(f'Excepption in check_product_360_images_tag: {e}')
+            else: pass
+
+    # check alt text of images 360 on the shopify product and if not found add it
+    def check_product_images_alt_text(self, image_description: str, new_product_title: str, shopify_product: dict, shopify_processor: Shopify_Processor) -> None:
+        try:
+            if image_description:
+                if shopify_product['images']:
+                    for image in shopify_product['images']:
+                        image_id = str(image['id']).strip()
+                        product_id = str(image['product_id']).strip()
+                        if image_description != str(image['alt']):
+                            shopify_processor.update_product_image_alt_text(product_id, image_id, image_description, new_product_title)
+                else:
+                    if shopify_product['image']:
+                        image = shopify_product['image']
+                        image_id = str(image['id']).strip()
+                        product_id = str(image['product_id']).strip()
+                        if image_description != str(image['alt']):
+                            shopify_processor.update_product_image_alt_text(product_id, image_id, image_description, new_product_title)
+        except Exception as e: 
+            self.print_logs(f'Excepption in check_product_images_alt_text: {e}')
+            if self.DEBUG: print(f'Excepption in check_product_images_alt_text: {e}')
+            else: pass
+
+    # add product image to the shopify
+    def add_product_image(self, product: Product, new_product_title: str, shopify_processor: Shopify_Processor) -> None:
+        try:
+            image_attachment = shopify_processor.download_image(str(product.metafields.img_url).strip())
+            if image_attachment:
+                image_attachment = base64.b64encode(image_attachment)
+                filename = f"{str(new_product_title).split('-')[0].strip().lower().replace(' ', '-')}-01.jpg"
+                alt = f"{str(new_product_title).split('-')[0].strip()}"
+                if not shopify_processor.update_product_image(product.shopify_id, image_attachment, filename, new_product_title, new_product_title):
+                    print(f'Failed to update product: {new_product_title} image')
+            else: print(f'Failed to download image for {new_product_title}')
+        except Exception as e: 
+            self.print_logs(f'Excepption in add_product_image: {e}')
+            if self.DEBUG: print(f'Excepption in add_product_image: {e}')
+            else: pass
+
+    # check product options and modify them if needed
+    def check_product_options(self, product: Product, shopify_product: dict, shopify_processor: Shopify_Processor) -> None:
+        try:
+            if len(product.variants) > 1 and shopify_product['options']:
+                for option in shopify_product['options']:
+                    if option['name'] == 'Title':
+                        product_json = { "product": { "id": option['product_id'], "options": {"id": option['id'], "name": "Size"} } }
+                        shopify_processor.update_product(option['product_id'], product_json)
+                        # shopify_processor.update_product_options(option['product_id'], option['id'], 'Size')
+        except Exception as e: 
+            self.print_logs(f'Excepption in check_product_options: {e}')
+            if self.DEBUG: print(f'Excepption in check_product_options: {e}')
+            else: pass
+
     # get product tags whcih are not on shopify
-    def get_product_tags(self, brand: Brand, product: Product, shopify_product_tags: list[str]) -> str:
+    def get_product_tags(self, brand: Brand, product: Product, shopify_product_tags: list[str]) -> list[str]:
         tags = []
         try:
             if str(brand.name).strip() and str(brand.name).strip() not in shopify_product_tags: tags.append(str(brand.name).strip())
             if str(product.number).strip() and str(product.number).strip().upper() not in shopify_product_tags: tags.append(str(product.number).strip().upper())
             if str(product.name).strip() and str(product.name).strip().upper() not in shopify_product_tags: tags.append(str(product.name).strip().upper())
             if str(product.frame_code).strip() and str(product.frame_code).strip().upper() not in shopify_product_tags: tags.append(str(product.frame_code).strip().upper())
-            if str(product.lens_code).strip() and str(product.lens_code).strip().upper() not in shopify_product_tags: tags.append(str(product.lens_code).strip().upper())
             if str(product.type).strip() and str(product.type).strip() not in shopify_product_tags: tags.append(str(product.type).strip())
             if str(product.metafields.for_who).strip():
                 if str(product.metafields.for_who).strip().lower() == 'unisex':
@@ -739,32 +805,40 @@ class Keringeyewear_Shopify:
             if str(product.metafields.lens_technology).strip() and str(product.metafields.lens_technology).strip() not in shopify_product_tags: tags.append(str(product.metafields.lens_technology).strip())
             if str(product.metafields.frame_shape).strip() and str(product.metafields.frame_shape).strip() not in shopify_product_tags: tags.append(str(product.metafields.frame_shape).strip())
             if str(product.metafields.frame_material).strip() and str(product.metafields.frame_material).strip() not in shopify_product_tags: tags.append(str(product.metafields.frame_material).strip())
-        except Exception as e:
+        except Exception as e: 
             self.print_logs(f'Exception in get_product_tags: {e}')
             if self.DEBUG: print(f'Exception in get_product_tags: {e}')
             else: pass
-        finally: return ', '.join(tags)
+        finally: return tags
 
     # add new product to the shopify store
     def add_new_product(self, new_product_title: str, product: Product, brand: Brand, shopify_processor: Shopify_Processor) -> None:
         try:
+            print('New', new_product_title)
             # add this product as new to the store
-            print('Adding product ', new_product_title)
-            # inserting new product to the shopify store
-            product_description = self.create_product_description(brand, product)            
-            store = self.query_processor.get_store_against_product_id(product.id)
-            meta_title = self.create_product_meta_title(brand, product)
-            meta_description = self.create_product_meta_description(brand, product)
-            image_description = self.create_product_image_description(brand, product)
-            shopify_processor.insert_product(brand, product, new_product_title, product_description, meta_title, meta_description, image_description, store)
-            # updating shopify_id of new inserted product in database
-            self.query_processor.update_product_shopify_id(product.shopify_id, product.id)
-            # updating shopify_id and inventory_item_id of new variants in database
-            for variant in product.variants:
-                self.query_processor.update_variant_shopify_id(variant.shopify_id, variant.id)
-                self.query_processor.update_variant_inventory_item_id(variant.inventory_item_id, variant.id)
-            self.new_products.append(product)
-        except Exception as e:
+            # get product description for new product
+            product_description = self.create_product_description(brand, product)
+            # get tags for new product
+            tags = self.get_product_tags(brand, product, [])
+            tags.insert(0, 'New')
+            shopify_processor.insert_product(brand, product, new_product_title, product_description, tags)
+            if product.shopify_id:
+                # get metafields for new product
+                new_metafields = self.get_new_product_metafeilds(brand, product)
+                # adding metafields to new products
+                for metafield in new_metafields: 
+                    shopify_processor.set_metafields_for_product(product.shopify_id, metafield)
+                image_description = self.create_product_image_description(brand, product)
+                # adding 360 images to product
+                self.add_product_360_images(product, image_description, shopify_processor)
+                # updating shopify_id of new inserted product in database
+                self.query_processor.update_product_shopify_id(product.shopify_id, product.id)
+                # updating shopify_id and inventory_item_id of new variants in database
+                for variant in product.variants:
+                    self.query_processor.update_variant_shopify_id(variant.shopify_id, variant.id)
+                    self.query_processor.update_variant_inventory_item_id(variant.inventory_item_id, variant.id)
+                self.new_products.append(product)
+        except Exception as e: 
             self.print_logs(f'Exception in add_new_product: {e}')
             if self.DEBUG: print(f'Exception in add_new_product: {e}')
             else: pass
@@ -786,6 +860,17 @@ class Keringeyewear_Shopify:
                 else:
                     json_metafield = {"namespace": "my_fields", "key": "for_who", "value": str(product.metafields.for_who).strip(), "type": "single_line_text_field"}
                     shopify_processor.set_metafields_for_product(product.shopify_id, json_metafield)
+                
+                metafield_found_status, metafield_id, shopify_metafield__for_who = self.get_matched_metafiled(shopify_metafields, 'per_chi')
+                if metafield_found_status:
+                    if str(shopify_metafield__for_who).strip().title() != str(product.metafields.for_who).strip().title():
+                        old_for_who = str(shopify_metafield__for_who).strip().title()
+                        new_for_who = str(product.metafields.for_who).strip().title()
+                        if not shopify_processor.update_for_who_metafield(metafield_id, new_for_who, new_product_title):
+                            print(f'Failed to update product gender metafield\nOld gender metafield: {old_for_who}\nNew gender metafield: {new_for_who}')
+                else:
+                    json_metafield = {"namespace": "italian", "key": "per_chi", "value": str(product.metafields.for_who).strip(), "type": "single_line_text_field"}
+                    shopify_processor.set_metafields_for_product(product.shopify_id, json_metafield)
             if str(product.frame_color).strip():
                 metafield_found_status, metafield_id, shopify_metafield__frame_color = self.get_matched_metafiled(shopify_metafields, 'frame_color')
                 if metafield_found_status:
@@ -796,6 +881,17 @@ class Keringeyewear_Shopify:
                             print(f'Failed to update product frame color metafield\nOld frame color metafield: {old_frame_color}\nNew frame color metafield: {new_frame_color}')
                 else:
                     json_metafield = {"namespace": "my_fields", "key": "frame_color", "value": str(product.frame_color).strip(), "type": "single_line_text_field"}
+                    shopify_processor.set_metafields_for_product(product.shopify_id, json_metafield)
+                
+                metafield_found_status, metafield_id, shopify_metafield__frame_color = self.get_matched_metafiled(shopify_metafields, 'colore_della_montatura')
+                if metafield_found_status:
+                    if str(shopify_metafield__frame_color).strip().title() != str(product.frame_color).strip().title():
+                        old_frame_color = str(shopify_metafield__frame_color).strip().title()
+                        new_frame_color = str(product.frame_color).strip().title()
+                        if not shopify_processor.update_frame_color_metafield(metafield_id, new_frame_color, new_product_title):
+                            print(f'Failed to update product frame color metafield\nOld frame color metafield: {old_frame_color}\nNew frame color metafield: {new_frame_color}')
+                else:
+                    json_metafield = {"namespace": "italian", "key": "colore_della_montatura", "value": str(product.frame_color).strip(), "type": "single_line_text_field"}
                     shopify_processor.set_metafields_for_product(product.shopify_id, json_metafield)
             if str(product.metafields.frame_material).strip():
                 metafield_found_status, metafield_id, shopify_metafield__frame_material = self.get_matched_metafiled(shopify_metafields, 'frame_material')
@@ -808,6 +904,17 @@ class Keringeyewear_Shopify:
                 else:
                     json_metafield = {"namespace": "my_fields", "key": "frame_material", "value": str(product.metafields.frame_material).strip(), "type": "single_line_text_field"}
                     shopify_processor.set_metafields_for_product(product.shopify_id, json_metafield)
+                
+                metafield_found_status, metafield_id, shopify_metafield__frame_material = self.get_matched_metafiled(shopify_metafields, 'materiale_della_montatura')
+                if metafield_found_status:
+                    if str(shopify_metafield__frame_material).strip().title() != str(product.metafields.frame_material).strip().title():
+                        old_frame_material = str(shopify_metafield__frame_material).strip().title()
+                        new_frame_material = str(product.metafields.frame_material).strip().title()
+                        if not shopify_processor.update_frame_material_metafield(metafield_id, new_frame_material, new_product_title):
+                            print(f'Failed to update product frame material metafield\nOld frame material metafield: {old_frame_material}\nNew frame material metafield: {new_frame_material}')
+                else:
+                    json_metafield = {"namespace": "italian", "key": "materiale_della_montatura", "value": str(product.metafields.frame_material).strip(), "type": "single_line_text_field"}
+                    shopify_processor.set_metafields_for_product(product.shopify_id, json_metafield)
             if str(product.metafields.frame_shape).strip():
                 metafield_found_status, metafield_id, shopify_metafield__frame_shape = self.get_matched_metafiled(shopify_metafields, 'frame_shape')
                 if metafield_found_status:
@@ -818,6 +925,17 @@ class Keringeyewear_Shopify:
                             print(f'Failed to update product frame shape metafield\nOld frame shape metafield: {old_frame_shape}\nNew frame_shape metafield: {new_frame_shape}')
                 else:
                     json_metafield = {"namespace": "my_fields", "key": "frame_shape", "value": str(product.metafields.frame_shape).strip(), "type": "single_line_text_field"}
+                    shopify_processor.set_metafields_for_product(product.shopify_id, json_metafield)
+
+                metafield_found_status, metafield_id, shopify_metafield__frame_shape = self.get_matched_metafiled(shopify_metafields, 'forma')
+                if metafield_found_status:
+                    if str(shopify_metafield__frame_shape).strip().title() != str(product.metafields.frame_shape).strip().title():
+                        old_frame_shape = str(shopify_metafield__frame_shape).strip().title()
+                        new_frame_shape = str(product.metafields.frame_shape).strip().title()
+                        if not shopify_processor.update_frame_shape_metafield(metafield_id, new_frame_shape, new_product_title):
+                            print(f'Failed to update product frame shape metafield\nOld frame shape metafield: {old_frame_shape}\nNew frame_shape metafield: {new_frame_shape}')
+                else:
+                    json_metafield = {"namespace": "italian", "key": "forma", "value": str(product.metafields.frame_shape).strip(), "type": "single_line_text_field"}
                     shopify_processor.set_metafields_for_product(product.shopify_id, json_metafield)
             if str(product.lens_color).strip():
                 metafield_found_status, metafield_id, shopify_metafield__lens_color = self.get_matched_metafiled(shopify_metafields, 'lens_color')
@@ -830,6 +948,17 @@ class Keringeyewear_Shopify:
                 else:
                     json_metafield = {"namespace": "my_fields", "key": "lens_color", "value": str(product.lens_color).strip(), "type": "single_line_text_field"}
                     shopify_processor.set_metafields_for_product(product.shopify_id, json_metafield)
+
+                metafield_found_status, metafield_id, shopify_metafield__lens_color = self.get_matched_metafiled(shopify_metafields, 'colore_della_lente')
+                if metafield_found_status:
+                    if str(product.lens_color).strip() and str(shopify_metafield__lens_color).strip().title() != str(product.lens_color).strip().title():
+                        old_lens_color = str(shopify_metafield__lens_color).strip().title()
+                        new_lens_color = str(product.lens_color).strip().title()
+                        if not shopify_processor.update_lens_color_metafield(metafield_id, new_lens_color, new_product_title):
+                            print(f'Failed to update product lens color metafield\nOld lens color metafield: {old_lens_color}\nNew lens color metafield: {new_lens_color}')
+                else:
+                    json_metafield = {"namespace": "italian", "key": "colore_della_lente", "value": str(product.lens_color).strip(), "type": "single_line_text_field"}
+                    shopify_processor.set_metafields_for_product(product.shopify_id, json_metafield)
             if str(product.metafields.lens_technology).strip():
                 metafield_found_status, metafield_id, shopify_metafield__lens_technology = self.get_matched_metafiled(shopify_metafields, 'lens_technology')
                 if metafield_found_status:
@@ -840,6 +969,17 @@ class Keringeyewear_Shopify:
                             print(f'Failed to update product lens technology metafield\nOld lens technology metafield: {old_lens_technology}\nNew lens technology metafield: {new_lens_technology}')
                 else:
                     json_metafield = {"namespace": "my_fields", "key": "lens_technology", "value": str(product.metafields.lens_technology).strip(), "type": "single_line_text_field"}
+                    shopify_processor.set_metafields_for_product(product.shopify_id, json_metafield)
+                
+                metafield_found_status, metafield_id, shopify_metafield__lens_technology = self.get_matched_metafiled(shopify_metafields, 'tecnologia_della_lente')
+                if metafield_found_status:
+                    if str(product.metafields.lens_technology).strip() and str(shopify_metafield__lens_technology).strip().title() != str(product.metafields.lens_technology).strip().title():
+                        old_lens_technology = str(shopify_metafield__lens_technology).strip().title()
+                        new_lens_technology = str(product.metafields.lens_technology).strip().title()
+                        if not shopify_processor.update_lens_technology_metafield(metafield_id, new_lens_technology, new_product_title):
+                            print(f'Failed to update product lens technology metafield\nOld lens technology metafield: {old_lens_technology}\nNew lens technology metafield: {new_lens_technology}')
+                else:
+                    json_metafield = {"namespace": "italian", "key": "tecnologia_della_lente", "value": str(product.metafields.lens_technology).strip(), "type": "single_line_text_field"}
                     shopify_processor.set_metafields_for_product(product.shopify_id, json_metafield)
             if str(product.metafields.lens_material).strip():
                 metafield_found_status, metafield_id, shopify_metafield__lens_material = self.get_matched_metafiled(shopify_metafields, 'lens_material')
@@ -852,6 +992,17 @@ class Keringeyewear_Shopify:
                 else:
                     json_metafield = {"namespace": "my_fields", "key": "lens_material", "value": str(product.metafields.lens_material).strip(), "type": "single_line_text_field"}
                     shopify_processor.set_metafields_for_product(product.shopify_id, json_metafield)
+
+                metafield_found_status, metafield_id, shopify_metafield__lens_material = self.get_matched_metafiled(shopify_metafields, 'materiale_della_lente')
+                if metafield_found_status:
+                    if str(shopify_metafield__lens_material).strip().title() != str(product.metafields.lens_material).strip().title():
+                        old_lens_material = str(shopify_metafield__lens_material).strip().title()
+                        new_lens_material = str(product.metafields.lens_material).strip().title()
+                        if not shopify_processor.update_lens_material_metafield(metafield_id, new_lens_material, new_product_title):
+                            print(f'Failed to update product lens material metafield\nOld lens material metafield: {old_lens_material}\nNew lens material metafield: {new_lens_material}')
+                else:
+                    json_metafield = {"namespace": "italian", "key": "materiale_della_lente", "value": str(product.metafields.lens_material).strip(), "type": "single_line_text_field"}
+                    shopify_processor.set_metafields_for_product(product.shopify_id, json_metafield)
             if str(product.metafields.product_size).strip():
                 metafield_found_status, metafield_id, shopify_metafield__product_size = self.get_matched_metafiled(shopify_metafields, 'product_size')
                 if metafield_found_status:
@@ -862,6 +1013,17 @@ class Keringeyewear_Shopify:
                             print(f'Failed to update product product size metafield\nOld product size metafield: {old_product_size}\nNew product size metafield: {new_product_size}')
                 else:
                     json_metafield = {"namespace": "my_fields", "key": "product_size", "value": str(product.metafields.product_size).strip(), "type": "single_line_text_field"}
+                    shopify_processor.set_metafields_for_product(product.shopify_id, json_metafield)
+
+                metafield_found_status, metafield_id, shopify_metafield__product_size = self.get_matched_metafiled(shopify_metafields, 'calibro_ponte_asta')
+                if metafield_found_status:
+                    if str(shopify_metafield__product_size).strip() != str(product.metafields.product_size).strip():
+                        old_product_size = str(shopify_metafield__product_size).strip().title()
+                        new_product_size = str(product.metafields.product_size).strip().title()
+                        if not shopify_processor.update_gtin1_metafield(metafield_id, new_product_size, new_product_title):
+                            print(f'Failed to update product product size metafield\nOld product size metafield: {old_product_size}\nNew product size metafield: {new_product_size}')
+                else:
+                    json_metafield = {"namespace": "italian", "key": "calibro_ponte_asta", "value": str(product.metafields.product_size).strip(), "type": "single_line_text_field"}
                     shopify_processor.set_metafields_for_product(product.shopify_id, json_metafield)
             if str(product.metafields.gtin1).strip():
                 metafield_found_status, metafield_id, shopify_metafield__gtin1 = self.get_matched_metafiled(shopify_metafields, 'gtin1')
@@ -874,17 +1036,6 @@ class Keringeyewear_Shopify:
                 else:
                     json_metafield = {"namespace": "my_fields", "key": "gtin1", "value": str(product.metafields.gtin1).strip(), "type": "single_line_text_field"}
                     shopify_processor.set_metafields_for_product(product.shopify_id, json_metafield)
-            # if str(product.metafields.activity).strip():
-            #     metafield_found_status, metafield_id, shopify_metafield__activity = self.get_matched_metafiled(shopify_metafields, 'activity')
-            #     if metafield_found_status:
-            #         if str(shopify_metafield__activity).strip() != str(product.metafields.activity).strip().title():
-            #             old_activity = str(shopify_metafield__activity).strip().title()
-            #             new_activity = str(product.metafields.activity).strip().title()
-            #             if not shopify_processor.update_activity_metafield(metafield_id, new_activity, new_product_title):
-            #                 print(f'Failed to update product activity\nOld activity metafield: {old_activity}\nNew activity metafield: {new_activity}')
-            #     else:
-            #         json_metafield = {"namespace": "my_fields", "key": "activity", "value": str(product.metafields.activity).strip(), "type": "single_line_text_field"}
-            #         shopify_processor.set_metafields_for_product(product.shopify_id, json_metafield)
             if str(product.metafields.graduabile).strip():
                 metafield_found_status, metafield_id, shopify_metafield__graduabile = self.get_matched_metafiled(shopify_metafields, 'graduabile')
                 if metafield_found_status:
@@ -907,7 +1058,7 @@ class Keringeyewear_Shopify:
                 else:
                     json_metafield = {'namespace': 'my_fields', 'key': 'interest', "value": str(product.metafields.interest).strip(), "type": "single_line_text_field"}
                     shopify_processor.set_metafields_for_product(product.shopify_id, json_metafield)
-            if not self.DEBUG and str(title_tag).strip():
+            if str(title_tag).strip():
                 metafield_found_status, metafield_id, shopify_metafield__title_tag = self.get_matched_metafiled(shopify_metafields, 'title_tag')
                 if metafield_found_status:
                     if str(shopify_metafield__title_tag).strip() != str(title_tag).strip():
@@ -918,7 +1069,7 @@ class Keringeyewear_Shopify:
                 else:
                     json_metafield = {'namespace': 'global', 'key': 'title_tag', "value": str(title_tag).strip(), "type": "single_line_text_field"}
                     shopify_processor.set_metafields_for_product(product.shopify_id, json_metafield)
-            if not self.DEBUG and str(description_tag).strip():
+            if str(description_tag).strip():
                 metafield_found_status, metafield_id, shopify_metafield__description_tag = self.get_matched_metafiled(shopify_metafields, 'description_tag')
                 if metafield_found_status:
                     if str(shopify_metafield__description_tag).strip() != str(description_tag).strip():
@@ -936,165 +1087,184 @@ class Keringeyewear_Shopify:
             else: pass                        
     
     # check product italian_metafields of database with shopify
-    def check_product_italian_metafields(self, new_product_title: str, product: Product, shopify_italian_metafields: dict, shopify_processor: Shopify_Processor) -> None:
-        try:
+    # def check_product_italian_metafields(self, new_product_title: str, product: Product, shopify_italian_metafields: dict, shopify_processor: Shopify_Processor) -> None:
+    #     try:
 
-            if str(product.metafields.for_who).strip():
-                metafield_found_status, metafield_id, shopify_metafield__for_who = self.get_matched_metafiled(shopify_italian_metafields, 'per_chi')
-                if metafield_found_status:
-                    if str(shopify_metafield__for_who).strip().title() != str(product.metafields.for_who).strip().title():
-                        old_for_who = str(shopify_metafield__for_who).strip().title()
-                        new_for_who = str(product.metafields.for_who).strip().title()
-                        if not shopify_processor.update_for_who_metafield(metafield_id, new_for_who, new_product_title):
-                            print(f'Failed to update product gender metafield\nOld gender metafield: {old_for_who}\nNew gender metafield: {new_for_who}')
-                else:
-                    json_metafield = {"namespace": "italian", "key": "per_chi", "value": str(product.metafields.for_who).strip(), "type": "single_line_text_field"}
-                    shopify_processor.set_metafields_for_product(product.shopify_id, json_metafield)
-            if str(product.frame_color).strip():
-                metafield_found_status, metafield_id, shopify_metafield__frame_color = self.get_matched_metafiled(shopify_italian_metafields, 'colore_della_montatura')
-                if metafield_found_status:
-                    if str(shopify_metafield__frame_color).strip().title() != str(product.frame_color).strip().title():
-                        old_frame_color = str(shopify_metafield__frame_color).strip().title()
-                        new_frame_color = str(product.frame_color).strip().title()
-                        if not shopify_processor.update_frame_color_metafield(metafield_id, new_frame_color, new_product_title):
-                            print(f'Failed to update product frame color metafield\nOld frame color metafield: {old_frame_color}\nNew frame color metafield: {new_frame_color}')
-                else:
-                    json_metafield = {"namespace": "italian", "key": "colore_della_montatura", "value": str(product.frame_color).strip(), "type": "single_line_text_field"}
-                    shopify_processor.set_metafields_for_product(product.shopify_id, json_metafield)
-            if str(product.metafields.frame_material).strip():
-                metafield_found_status, metafield_id, shopify_metafield__frame_material = self.get_matched_metafiled(shopify_italian_metafields, 'materiale_della_montatura')
-                if metafield_found_status:
-                    if str(shopify_metafield__frame_material).strip().title() != str(product.metafields.frame_material).strip().title():
-                        old_frame_material = str(shopify_metafield__frame_material).strip().title()
-                        new_frame_material = str(product.metafields.frame_material).strip().title()
-                        if not shopify_processor.update_frame_material_metafield(metafield_id, new_frame_material, new_product_title):
-                            print(f'Failed to update product frame material metafield\nOld frame material metafield: {old_frame_material}\nNew frame material metafield: {new_frame_material}')
-                else:
-                    json_metafield = {"namespace": "italian", "key": "materiale_della_montatura", "value": str(product.metafields.frame_material).strip(), "type": "single_line_text_field"}
-                    shopify_processor.set_metafields_for_product(product.shopify_id, json_metafield)
-            if str(product.metafields.frame_shape).strip():
-                metafield_found_status, metafield_id, shopify_metafield__frame_shape = self.get_matched_metafiled(shopify_italian_metafields, 'forma')
-                if metafield_found_status:
-                    if str(shopify_metafield__frame_shape).strip().title() != str(product.metafields.frame_shape).strip().title():
-                        old_frame_shape = str(shopify_metafield__frame_shape).strip().title()
-                        new_frame_shape = str(product.metafields.frame_shape).strip().title()
-                        if not shopify_processor.update_frame_shape_metafield(metafield_id, new_frame_shape, new_product_title):
-                            print(f'Failed to update product frame shape metafield\nOld frame shape metafield: {old_frame_shape}\nNew frame_shape metafield: {new_frame_shape}')
-                else:
-                    json_metafield = {"namespace": "italian", "key": "forma", "value": str(product.metafields.frame_shape).strip(), "type": "single_line_text_field"}
-                    shopify_processor.set_metafields_for_product(product.shopify_id, json_metafield)
-            if str(product.lens_color).strip():
-                metafield_found_status, metafield_id, shopify_metafield__lens_color = self.get_matched_metafiled(shopify_italian_metafields, 'colore_della_lente')
-                if metafield_found_status:
-                    if str(product.lens_color).strip() and str(shopify_metafield__lens_color).strip().title() != str(product.lens_color).strip().title():
-                        old_lens_color = str(shopify_metafield__lens_color).strip().title()
-                        new_lens_color = str(product.lens_color).strip().title()
-                        if not shopify_processor.update_lens_color_metafield(metafield_id, new_lens_color, new_product_title):
-                            print(f'Failed to update product lens color metafield\nOld lens color metafield: {old_lens_color}\nNew lens color metafield: {new_lens_color}')
-                else:
-                    json_metafield = {"namespace": "italian", "key": "colore_della_lente", "value": str(product.lens_color).strip(), "type": "single_line_text_field"}
-                    shopify_processor.set_metafields_for_product(product.shopify_id, json_metafield)
-            if str(product.metafields.lens_technology).strip():
-                metafield_found_status, metafield_id, shopify_metafield__lens_technology = self.get_matched_metafiled(shopify_italian_metafields, 'tecnologia_della_lente')
-                if metafield_found_status:
-                    if str(product.metafields.lens_technology).strip() and str(shopify_metafield__lens_technology).strip().title() != str(product.metafields.lens_technology).strip().title():
-                        old_lens_technology = str(shopify_metafield__lens_technology).strip().title()
-                        new_lens_technology = str(product.metafields.lens_technology).strip().title()
-                        if not shopify_processor.update_lens_technology_metafield(metafield_id, new_lens_technology, new_product_title):
-                            print(f'Failed to update product lens technology metafield\nOld lens technology metafield: {old_lens_technology}\nNew lens technology metafield: {new_lens_technology}')
-                else:
-                    json_metafield = {"namespace": "italian", "key": "tecnologia_della_lente", "value": str(product.metafields.lens_technology).strip(), "type": "single_line_text_field"}
-                    shopify_processor.set_metafields_for_product(product.shopify_id, json_metafield)
-            if str(product.metafields.lens_material).strip():
-                metafield_found_status, metafield_id, shopify_metafield__lens_material = self.get_matched_metafiled(shopify_italian_metafields, 'materiale_della_lente')
-                if metafield_found_status:
-                    if str(shopify_metafield__lens_material).strip().title() != str(product.metafields.lens_material).strip().title():
-                        old_lens_material = str(shopify_metafield__lens_material).strip().title()
-                        new_lens_material = str(product.metafields.lens_material).strip().title()
-                        if not shopify_processor.update_lens_material_metafield(metafield_id, new_lens_material, new_product_title):
-                            print(f'Failed to update product lens material metafield\nOld lens material metafield: {old_lens_material}\nNew lens material metafield: {new_lens_material}')
-                else:
-                    json_metafield = {"namespace": "italian", "key": "materiale_della_lente", "value": str(product.metafields.lens_material).strip(), "type": "single_line_text_field"}
-                    shopify_processor.set_metafields_for_product(product.shopify_id, json_metafield)
-            if str(product.metafields.product_size).strip():
-                metafield_found_status, metafield_id, shopify_metafield__product_size = self.get_matched_metafiled(shopify_italian_metafields, 'calibro_ponte_asta')
-                if metafield_found_status:
-                    if str(shopify_metafield__product_size).strip() != str(product.metafields.product_size).strip():
-                        old_product_size = str(shopify_metafield__product_size).strip().title()
-                        new_product_size = str(product.metafields.product_size).strip().title()
-                        if not shopify_processor.update_gtin1_metafield(metafield_id, new_product_size, new_product_title):
-                            print(f'Failed to update product product size metafield\nOld product size metafield: {old_product_size}\nNew product size metafield: {new_product_size}')
-                else:
-                    json_metafield = {"namespace": "italian", "key": "calibro_ponte_asta", "value": str(product.metafields.product_size).strip(), "type": "single_line_text_field"}
-                    shopify_processor.set_metafields_for_product(product.shopify_id, json_metafield)
-            # if str(product.metafields.activity).strip():
-            #     metafield_found_status, metafield_id, shopify_metafield__activity = self.get_matched_metafiled(shopify_italian_metafields, 'attivita')
-            #     if metafield_found_status:
-            #         if str(shopify_metafield__activity).strip() != str(product.metafields.activity).strip().title():
-            #             old_activity = str(shopify_metafield__activity).strip().title()
-            #             new_activity = str(product.metafields.activity).strip().title()
-            #             if not shopify_processor.update_activity_metafield(metafield_id, new_activity, new_product_title):
-            #                 print(f'Failed to update product activity\nOld activity metafield: {old_activity}\nNew activity metafield: {new_activity}')
-            #     else:
-            #         json_metafield = {"namespace": "italian", "key": "attivita", "value": str(product.metafields.activity).strip(), "type": "single_line_text_field"}
-            #         shopify_processor.set_metafields_for_product(product.shopify_id, json_metafield)
+    #         if str(product.metafields.for_who).strip():
+    #             metafield_found_status, metafield_id, shopify_metafield__for_who = self.get_matched_metafiled(shopify_italian_metafields, 'per_chi')
+    #             if metafield_found_status:
+    #                 if str(shopify_metafield__for_who).strip().title() != str(product.metafields.for_who).strip().title():
+    #                     old_for_who = str(shopify_metafield__for_who).strip().title()
+    #                     new_for_who = str(product.metafields.for_who).strip().title()
+    #                     if not shopify_processor.update_for_who_metafield(metafield_id, new_for_who, new_product_title):
+    #                         print(f'Failed to update product gender metafield\nOld gender metafield: {old_for_who}\nNew gender metafield: {new_for_who}')
+    #             else:
+    #                 json_metafield = {"namespace": "italian", "key": "per_chi", "value": str(product.metafields.for_who).strip(), "type": "single_line_text_field"}
+    #                 shopify_processor.set_metafields_for_product(product.shopify_id, json_metafield)
+    #         if str(product.frame_color).strip():
+    #             metafield_found_status, metafield_id, shopify_metafield__frame_color = self.get_matched_metafiled(shopify_italian_metafields, 'colore_della_montatura')
+    #             if metafield_found_status:
+    #                 if str(shopify_metafield__frame_color).strip().title() != str(product.frame_color).strip().title():
+    #                     old_frame_color = str(shopify_metafield__frame_color).strip().title()
+    #                     new_frame_color = str(product.frame_color).strip().title()
+    #                     if not shopify_processor.update_frame_color_metafield(metafield_id, new_frame_color, new_product_title):
+    #                         print(f'Failed to update product frame color metafield\nOld frame color metafield: {old_frame_color}\nNew frame color metafield: {new_frame_color}')
+    #             else:
+    #                 json_metafield = {"namespace": "italian", "key": "colore_della_montatura", "value": str(product.frame_color).strip(), "type": "single_line_text_field"}
+    #                 shopify_processor.set_metafields_for_product(product.shopify_id, json_metafield)
+    #         if str(product.metafields.frame_material).strip():
+    #             metafield_found_status, metafield_id, shopify_metafield__frame_material = self.get_matched_metafiled(shopify_italian_metafields, 'materiale_della_montatura')
+    #             if metafield_found_status:
+    #                 if str(shopify_metafield__frame_material).strip().title() != str(product.metafields.frame_material).strip().title():
+    #                     old_frame_material = str(shopify_metafield__frame_material).strip().title()
+    #                     new_frame_material = str(product.metafields.frame_material).strip().title()
+    #                     if not shopify_processor.update_frame_material_metafield(metafield_id, new_frame_material, new_product_title):
+    #                         print(f'Failed to update product frame material metafield\nOld frame material metafield: {old_frame_material}\nNew frame material metafield: {new_frame_material}')
+    #             else:
+    #                 json_metafield = {"namespace": "italian", "key": "materiale_della_montatura", "value": str(product.metafields.frame_material).strip(), "type": "single_line_text_field"}
+    #                 shopify_processor.set_metafields_for_product(product.shopify_id, json_metafield)
+    #         if str(product.metafields.frame_shape).strip():
+    #             metafield_found_status, metafield_id, shopify_metafield__frame_shape = self.get_matched_metafiled(shopify_italian_metafields, 'forma')
+    #             if metafield_found_status:
+    #                 if str(shopify_metafield__frame_shape).strip().title() != str(product.metafields.frame_shape).strip().title():
+    #                     old_frame_shape = str(shopify_metafield__frame_shape).strip().title()
+    #                     new_frame_shape = str(product.metafields.frame_shape).strip().title()
+    #                     if not shopify_processor.update_frame_shape_metafield(metafield_id, new_frame_shape, new_product_title):
+    #                         print(f'Failed to update product frame shape metafield\nOld frame shape metafield: {old_frame_shape}\nNew frame_shape metafield: {new_frame_shape}')
+    #             else:
+    #                 json_metafield = {"namespace": "italian", "key": "forma", "value": str(product.metafields.frame_shape).strip(), "type": "single_line_text_field"}
+    #                 shopify_processor.set_metafields_for_product(product.shopify_id, json_metafield)
+    #         if str(product.lens_color).strip():
+    #             metafield_found_status, metafield_id, shopify_metafield__lens_color = self.get_matched_metafiled(shopify_italian_metafields, 'colore_della_lente')
+    #             if metafield_found_status:
+    #                 if str(product.lens_color).strip() and str(shopify_metafield__lens_color).strip().title() != str(product.lens_color).strip().title():
+    #                     old_lens_color = str(shopify_metafield__lens_color).strip().title()
+    #                     new_lens_color = str(product.lens_color).strip().title()
+    #                     if not shopify_processor.update_lens_color_metafield(metafield_id, new_lens_color, new_product_title):
+    #                         print(f'Failed to update product lens color metafield\nOld lens color metafield: {old_lens_color}\nNew lens color metafield: {new_lens_color}')
+    #             else:
+    #                 json_metafield = {"namespace": "italian", "key": "colore_della_lente", "value": str(product.lens_color).strip(), "type": "single_line_text_field"}
+    #                 shopify_processor.set_metafields_for_product(product.shopify_id, json_metafield)
+    #         if str(product.metafields.lens_technology).strip():
+    #             metafield_found_status, metafield_id, shopify_metafield__lens_technology = self.get_matched_metafiled(shopify_italian_metafields, 'tecnologia_della_lente')
+    #             if metafield_found_status:
+    #                 if str(product.metafields.lens_technology).strip() and str(shopify_metafield__lens_technology).strip().title() != str(product.metafields.lens_technology).strip().title():
+    #                     old_lens_technology = str(shopify_metafield__lens_technology).strip().title()
+    #                     new_lens_technology = str(product.metafields.lens_technology).strip().title()
+    #                     if not shopify_processor.update_lens_technology_metafield(metafield_id, new_lens_technology, new_product_title):
+    #                         print(f'Failed to update product lens technology metafield\nOld lens technology metafield: {old_lens_technology}\nNew lens technology metafield: {new_lens_technology}')
+    #             else:
+    #                 json_metafield = {"namespace": "italian", "key": "tecnologia_della_lente", "value": str(product.metafields.lens_technology).strip(), "type": "single_line_text_field"}
+    #                 shopify_processor.set_metafields_for_product(product.shopify_id, json_metafield)
+    #         if str(product.metafields.lens_material).strip():
+    #             metafield_found_status, metafield_id, shopify_metafield__lens_material = self.get_matched_metafiled(shopify_italian_metafields, 'materiale_della_lente')
+    #             if metafield_found_status:
+    #                 if str(shopify_metafield__lens_material).strip().title() != str(product.metafields.lens_material).strip().title():
+    #                     old_lens_material = str(shopify_metafield__lens_material).strip().title()
+    #                     new_lens_material = str(product.metafields.lens_material).strip().title()
+    #                     if not shopify_processor.update_lens_material_metafield(metafield_id, new_lens_material, new_product_title):
+    #                         print(f'Failed to update product lens material metafield\nOld lens material metafield: {old_lens_material}\nNew lens material metafield: {new_lens_material}')
+    #             else:
+    #                 json_metafield = {"namespace": "italian", "key": "materiale_della_lente", "value": str(product.metafields.lens_material).strip(), "type": "single_line_text_field"}
+    #                 shopify_processor.set_metafields_for_product(product.shopify_id, json_metafield)
+    #         if str(product.metafields.product_size).strip():
+    #             metafield_found_status, metafield_id, shopify_metafield__product_size = self.get_matched_metafiled(shopify_italian_metafields, 'calibro_ponte_asta')
+    #             if metafield_found_status:
+    #                 if str(shopify_metafield__product_size).strip() != str(product.metafields.product_size).strip():
+    #                     old_product_size = str(shopify_metafield__product_size).strip().title()
+    #                     new_product_size = str(product.metafields.product_size).strip().title()
+    #                     if not shopify_processor.update_gtin1_metafield(metafield_id, new_product_size, new_product_title):
+    #                         print(f'Failed to update product product size metafield\nOld product size metafield: {old_product_size}\nNew product size metafield: {new_product_size}')
+    #             else:
+    #                 json_metafield = {"namespace": "italian", "key": "calibro_ponte_asta", "value": str(product.metafields.product_size).strip(), "type": "single_line_text_field"}
+    #                 shopify_processor.set_metafields_for_product(product.shopify_id, json_metafield)
+    #         # if str(product.metafields.activity).strip():
+    #         #     metafield_found_status, metafield_id, shopify_metafield__activity = self.get_matched_metafiled(shopify_italian_metafields, 'attivita')
+    #         #     if metafield_found_status:
+    #         #         if str(shopify_metafield__activity).strip() != str(product.metafields.activity).strip().title():
+    #         #             old_activity = str(shopify_metafield__activity).strip().title()
+    #         #             new_activity = str(product.metafields.activity).strip().title()
+    #         #             if not shopify_processor.update_activity_metafield(metafield_id, new_activity, new_product_title):
+    #         #                 print(f'Failed to update product activity\nOld activity metafield: {old_activity}\nNew activity metafield: {new_activity}')
+    #         #     else:
+    #         #         json_metafield = {"namespace": "italian", "key": "attivita", "value": str(product.metafields.activity).strip(), "type": "single_line_text_field"}
+    #         #         shopify_processor.set_metafields_for_product(product.shopify_id, json_metafield)
             
-        except Exception as e:
-            self.print_logs(f'Exception in check_product_metafields: {e}')
-            if self.DEBUG: print(f'Exception in check_product_metafields: {e}')
-            else: pass                        
+    #     except Exception as e:
+    #         self.print_logs(f'Exception in check_product_metafields: {e}')
+    #         if self.DEBUG: print(f'Exception in check_product_metafields: {e}')
+    #         else: pass                        
 
-    # add product metafields to the shopify store
-    def add_product_metafeilds(self, product: Product, shopify_processor: Shopify_Processor) -> None:
+    # get new product metafields for the product
+    def get_new_product_metafeilds(self, brand: Brand, product: Product) -> list[dict]:
         metafields = []
         try:
-            if str(product.metafields.for_who).strip(): metafields.append({"namespace": "my_fields", "key": "for_who", "value": str(product.metafields.for_who).strip(), "type": "single_line_text_field"})
-            if str(product.frame_color).strip(): metafields.append({'namespace': 'my_fields', 'key': 'frame_color', "value": str(product.frame_color).strip(), "type": "single_line_text_field"})
-            if str(product.metafields.frame_material).strip(): metafields.append({'namespace': 'my_fields', 'key': 'frame_material', "value": str(product.metafields.frame_material).strip(), "type": "single_line_text_field"})
-            if str(product.metafields.frame_shape).strip(): metafields.append({'namespace': 'my_fields', 'key': 'frame_shape', "value": str(product.metafields.frame_shape).strip(), "type": "single_line_text_field"})
-            if str(product.lens_color).strip(): metafields.append({'namespace': 'my_fields', 'key': 'lens_color', "value": str(product.lens_color).strip(), "type": "single_line_text_field"})
-            if str(product.metafields.lens_material).strip(): metafields.append({'namespace': 'my_fields', 'key': 'lens_material', "value": str(product.metafields.lens_material).strip(), "type": "single_line_text_field"})
-            if str(product.metafields.lens_technology).strip(): metafields.append({'namespace': 'my_fields', 'key': 'lens_technology', "value": str(product.metafields.lens_technology).strip(), "type": "single_line_text_field"})
-            if str(product.metafields.product_size).strip(): metafields.append({'namespace': 'my_fields', 'key': 'product_size', "value": str(product.metafields.product_size).strip(), "type": "single_line_text_field"})
-            if str(product.metafields.gtin1).strip(): metafields.append({'namespace': 'my_fields', 'key': 'gtin1', "value": str(product.metafields.gtin1).strip(), "type": "single_line_text_field"})
-            # if str(product.metafields.activity).strip(): metafields.append({'namespace': 'my_fields', 'key': 'activity', "value": str(product.metafields.activity).strip(), "type": "single_line_text_field"})
-            
-            for metafield in metafields: 
-                shopify_processor.set_metafields_for_product(product.shopify_id, metafield)
-        except Exception as e: 
-            self.print_logs(f'Exception in add_product_metafeilds: {e}')
-            if self.DEBUG: print(f'Exception in add_product_metafeilds: {e}')
-            else: pass
-
-    # add product italian metafields to the shopify store
-    def add_product_italian_metafeilds(self, product: Product, shopify_processor: Shopify_Processor) -> None:
-        metafields = []
-        try:
+            meta_title = self.create_product_meta_title(brand, product)
+            meta_description = self.create_product_meta_description(brand, product)
             if str(product.metafields.for_who).strip(): 
+                metafields.append({"namespace": "my_fields", "key": "for_who", "value": str(product.metafields.for_who).strip(), "type": "single_line_text_field"})
                 metafields.append({"namespace": "italian", "key": "per_chi", "value": str(product.metafields.for_who).strip(), "type": "single_line_text_field"})
             if str(product.frame_color).strip(): 
+                metafields.append({'namespace': 'my_fields', 'key': 'frame_color', "value": str(product.frame_color).strip(), "type": "single_line_text_field"})
                 metafields.append({'namespace': 'italian', 'key': 'colore_della_montatura', "value": str(product.frame_color).strip(), "type": "single_line_text_field"})
             if str(product.metafields.frame_material).strip(): 
+                metafields.append({'namespace': 'my_fields', 'key': 'frame_material', "value": str(product.metafields.frame_material).strip(), "type": "single_line_text_field"})
                 metafields.append({'namespace': 'italian', 'key': 'materiale_della_montatura', "value": str(product.metafields.frame_material).strip(), "type": "single_line_text_field"})
             if str(product.metafields.frame_shape).strip(): 
+                metafields.append({'namespace': 'my_fields', 'key': 'frame_shape', "value": str(product.metafields.frame_shape).strip(), "type": "single_line_text_field"})
                 metafields.append({'namespace': 'italian', 'key': 'forma', "value": str(product.metafields.frame_shape).strip(), "type": "single_line_text_field"})
             if str(product.lens_color).strip(): 
+                metafields.append({'namespace': 'my_fields', 'key': 'lens_color', "value": str(product.lens_color).strip(), "type": "single_line_text_field"})
                 metafields.append({'namespace': 'italian', 'key': 'colore_della_lente', "value": str(product.lens_color).strip(), "type": "single_line_text_field"})
             if str(product.metafields.lens_material).strip(): 
+                metafields.append({'namespace': 'my_fields', 'key': 'lens_material', "value": str(product.metafields.lens_material).strip(), "type": "single_line_text_field"})
                 metafields.append({'namespace': 'italian', 'key': 'materiale_della_lente', "value": str(product.metafields.lens_material).strip(), "type": "single_line_text_field"})
             if str(product.metafields.lens_technology).strip(): 
+                metafields.append({'namespace': 'my_fields', 'key': 'lens_technology', "value": str(product.metafields.lens_technology).strip(), "type": "single_line_text_field"})
                 metafields.append({'namespace': 'italian', 'key': 'tecnologia_della_lente', "value": str(product.metafields.lens_technology).strip(), "type": "single_line_text_field"})
             if str(product.metafields.product_size).strip(): 
+                metafields.append({'namespace': 'my_fields', 'key': 'product_size', "value": str(product.metafields.product_size).strip(), "type": "single_line_text_field"})
                 metafields.append({'namespace': 'italian', 'key': 'calibro_ponte_asta', "value": str(product.metafields.product_size).strip(), "type": "single_line_text_field"})
-            # if str(product.metafields.activity).strip(): 
-            #     metafields.append({'namespace': 'italian', 'key': 'attivita', "value": str(product.metafields.activity).strip(), "type": "single_line_text_field"})
-
-            print(metafields)
-            for metafield in metafields: 
-                shopify_processor.set_metafields_for_product(product.shopify_id, metafield)
-        except Exception as e:
-            if self.DEBUG: print(f'Exception in add_product_italian_metafeilds: {e}')
+            if str(product.metafields.gtin1).strip(): 
+                metafields.append({'namespace': 'my_fields', 'key': 'gtin1', "value": str(product.metafields.gtin1).strip(), "type": "single_line_text_field"})
+            if str(meta_title).strip(): metafields.append({'namespace': 'global', 'key': 'title_tag', "value": str(meta_title).strip(), "type": "single_line_text_field"}) 
+            if str(meta_description).strip(): metafields.append({'namespace': 'global', 'key': 'description_tag', "value": str(meta_description).strip(), "type": "single_line_text_field"})
+            
+        except Exception as e: 
+            self.print_logs(f'Exception in get_new_product_metafeilds: {e}')
+            if self.DEBUG: print(f'Exception in get_new_product_metafeilds: {e}')
             else: pass
+        finally: return metafields
+
+    # add product italian metafields to the shopify store
+    # def add_product_italian_metafeilds(self, product: Product, shopify_processor: Shopify_Processor) -> None:
+    #     metafields = []
+    #     try:
+    #         if str(product.metafields.for_who).strip(): 
+    #             metafields.append({"namespace": "italian", "key": "per_chi", "value": str(product.metafields.for_who).strip(), "type": "single_line_text_field"})
+    #         if str(product.frame_color).strip(): 
+    #             metafields.append({'namespace': 'italian', 'key': 'colore_della_montatura', "value": str(product.frame_color).strip(), "type": "single_line_text_field"})
+    #         if str(product.metafields.frame_material).strip(): 
+    #             metafields.append({'namespace': 'italian', 'key': 'materiale_della_montatura', "value": str(product.metafields.frame_material).strip(), "type": "single_line_text_field"})
+    #         if str(product.metafields.frame_shape).strip(): 
+    #             metafields.append({'namespace': 'italian', 'key': 'forma', "value": str(product.metafields.frame_shape).strip(), "type": "single_line_text_field"})
+    #         if str(product.lens_color).strip(): 
+    #             metafields.append({'namespace': 'italian', 'key': 'colore_della_lente', "value": str(product.lens_color).strip(), "type": "single_line_text_field"})
+    #         if str(product.metafields.lens_material).strip(): 
+    #             metafields.append({'namespace': 'italian', 'key': 'materiale_della_lente', "value": str(product.metafields.lens_material).strip(), "type": "single_line_text_field"})
+    #         if str(product.metafields.lens_technology).strip(): 
+    #             metafields.append({'namespace': 'italian', 'key': 'tecnologia_della_lente', "value": str(product.metafields.lens_technology).strip(), "type": "single_line_text_field"})
+    #         if str(product.metafields.product_size).strip(): 
+    #             metafields.append({'namespace': 'italian', 'key': 'calibro_ponte_asta', "value": str(product.metafields.product_size).strip(), "type": "single_line_text_field"})
+    #         # if str(product.metafields.activity).strip(): 
+    #         #     metafields.append({'namespace': 'italian', 'key': 'attivita', "value": str(product.metafields.activity).strip(), "type": "single_line_text_field"})
+
+    #         print(metafields)
+    #         for metafield in metafields: 
+    #             shopify_processor.set_metafields_for_product(product.shopify_id, metafield)
+    #     except Exception as e:
+    #         if self.DEBUG: print(f'Exception in add_product_italian_metafeilds: {e}')
+    #         else: pass
 
     # check product variant and update them if needed
     def check_product_variant(self, new_product_title: str, variant: Variant, product: Product, shopify_product: dict, shopify_processor: Shopify_Processor) -> None:
@@ -1104,11 +1274,14 @@ class Keringeyewear_Shopify:
             if matched_index != -1:
                 if str(variant.title).strip():
                     if len(product.variants) == 1:
-                        if 'Default Title' != shopify_product['variants'][matched_index]['title']:
+                        if 'Default Title' != str(shopify_product['variants'][matched_index]['title']).strip():
                             if not shopify_processor.update_variant_title(variant.shopify_id, 'Default Title', new_product_title):
                                 print(f'Failed to update variant title of product: {new_product_title}')
                     else:    
-                        if variant.title != shopify_product['variants'][matched_index]['title']:
+                        if str(variant.title).strip() != str(shopify_product['variants'][matched_index]['title']).strip():
+                            # print(matched_index, str(variant.title).strip(), str(shopify_product['variants'][matched_index]['title']).strip())
+                            # print(variant.shopify_id, shopify_product['variants'][matched_index])
+                            # input('can i ')
                             if not shopify_processor.update_variant_title(variant.shopify_id, str(variant.title).strip(), new_product_title):
                                 print(f'Failed to update variant title of product: {new_product_title}')
 
@@ -1129,8 +1302,8 @@ class Keringeyewear_Shopify:
                     if not shopify_processor.update_variant_barcode(variant.shopify_id, str(variant.barcode_or_gtin).strip(), new_product_title):
                         print(f'Failed to update variant barcode of product: {new_product_title}')
             else:
-                print(f'{variant.title} not matched with any')
-        except Exception as e:
+                print(f'{new_product_title} {variant.title} not matched with any')
+        except Exception as e: 
             self.print_logs(f'Exception in check_product_variant: {e}')
             if self.DEBUG: print(f'Exception in check_product_variant: {e}')
             else: pass
@@ -1149,11 +1322,12 @@ class Keringeyewear_Shopify:
             again_shopify_product = shopify_processor.get_product_from_shopify(product.shopify_id)
             for shopify_variant in again_shopify_product['product']['variants']:
                 for v in product.variants:
-                    if str(v.shopify_id).strip() == str(shopify_variant['id']).strip():
-                        if str(v.title).strip() != str(shopify_variant['title']).strip():
-                            if not shopify_processor.update_variant_title(v.shopify_id, str(v.title).strip(), new_product_title):
-                                print(f'Failed to update variant title of product: {new_product_title}')
-
+                    if str(v.sku).strip() == str(shopify_variant['sku']).strip() and str(v.title).strip() != str(shopify_variant['title']).strip():
+                        
+                        if not shopify_processor.update_variant_title(v.shopify_id, str(v.title).strip(), new_product_title):
+                            print(f'Failed to update variant title of product: {new_product_title}')
+                        break
+            
             if len(product.variants) > 1 and again_shopify_product['product']['options']:
                 for option in again_shopify_product['product']['options']:
                     if option['name'] == 'Title':
